@@ -40,6 +40,23 @@ curl -X POST localhost:8080/api/feedback -H 'Content-Type: application/json' -d 
 }'
 ```
 
+## Pilot run with a hosted model
+
+Smoke-test the detector before touching real student data. This sends 12 synthetic submissions through the detector and prints precision, recall, F1 and kappa:
+
+```bash
+export OPENAI_API_KEY=...
+mvn spring-boot:run -Dspring-boot.run.profiles=pilot
+```
+
+The bundled set (`src/main/resources/pilot/synthetic-gold.json`) was written and labelled by an AI assistant, not by instructors. Use it only to check that the pipeline works and to compare models. Do not report its numbers as study results. For the real RQ1 evaluation, point the runner at an instructor-labelled file in the same format (anonymised, kept outside git):
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=pilot -Dspring-boot.run.arguments=--study.pilot.gold-file=study-data/gold.json
+```
+
+To compare models, run the pilot once per model (set `LLM_MODEL`) and record the scores.
+
 ## Status
 
 Early scaffold. The catalogue is a starting list from common DSA teaching patterns, not validated against course data.
