@@ -1,0 +1,66 @@
+[
+  {
+    "id": "M01",
+    "name": "Reference copy",
+    "topic": "Linked lists",
+    "belief": "Assigning one object variable to another copies the object, so changing one leaves the other unchanged.",
+    "pattern": "Node b = a; followed by b.next = x, with the student expecting a.next to stay the same.",
+    "correction": "Both variables hold a reference to the same object, so a change made through one is visible through the other. Copy explicitly if you need an independent node."
+  },
+  {
+    "id": "M02",
+    "name": "Equality operator",
+    "topic": "Collections",
+    "belief": "== compares the contents of two objects.",
+    "pattern": "Uses == to compare Strings or other objects where equals() is needed.",
+    "correction": "== compares references. Use equals() to compare contents, and override equals() and hashCode() together in your own classes."
+  },
+  {
+    "id": "M03",
+    "name": "Search bounds",
+    "topic": "Binary search",
+    "belief": "Any update of lo, hi and mid works as long as the interval seems to shrink.",
+    "pattern": "hi = mid or lo = mid without adding or subtracting one, combined with a loop condition that can stall.",
+    "correction": "State what is true about the search interval at the start of each iteration, and make sure every iteration strictly shrinks it. Test the two-element case."
+  },
+  {
+    "id": "M04",
+    "name": "Loop count equals complexity",
+    "topic": "Complexity",
+    "belief": "Complexity is the number of nested loops, whatever their bounds.",
+    "pattern": "Claims O(n^2) for two nested loops where the inner loop runs a constant or halving number of times.",
+    "correction": "Count how many times the innermost statement runs as a function of n, not how many loops appear in the code."
+  },
+  {
+    "id": "M05",
+    "name": "Constant-time lookup",
+    "topic": "Hash tables",
+    "belief": "Hash table lookup is always constant time.",
+    "pattern": "States O(1) worst case for a HashMap get without mentioning collisions or the hash function.",
+    "correction": "Constant time is the expected cost with a good hash function and load factor. The worst case depends on how collisions are handled."
+  },
+  {
+    "id": "M06",
+    "name": "Balanced by default",
+    "topic": "Trees",
+    "belief": "Binary search tree operations are always logarithmic.",
+    "pattern": "Claims O(log n) insert and search for a tree built from sorted input.",
+    "correction": "Cost depends on the height of the tree. Without balancing, sorted insertions give a height of n and linear time."
+  },
+  {
+    "id": "M07",
+    "name": "Base case",
+    "topic": "Recursion",
+    "belief": "A recursive method works without a correct stopping condition, or the base case can be skipped.",
+    "pattern": "No base case, or a base case that the recursive calls never reach.",
+    "correction": "Every recursive path must move toward a base case that returns without recursing. Trace the smallest input first."
+  },
+  {
+    "id": "M08",
+    "name": "Edit while iterating",
+    "topic": "Collections",
+    "belief": "Removing items from a list inside a for-each loop is safe.",
+    "pattern": "Calls list.remove(x) inside for (T x : list).",
+    "correction": "Changing the structure of a collection during iteration throws ConcurrentModificationException or skips elements. Use Iterator.remove() or removeIf()."
+  }
+]
