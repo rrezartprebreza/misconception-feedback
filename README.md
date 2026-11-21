@@ -23,11 +23,21 @@ Both conditions use the same model and settings. The generic condition never cal
 
 ## Run
 
+Default: a free local model through [Ollama](https://ollama.com). Student data stays on your machine.
+
 ```bash
-export OPENAI_API_KEY=...        # or swap the starter for spring-ai-starter-model-ollama
-export LLM_MODEL=gpt-4o-mini     # fix the model for the whole study and report it
+ollama pull qwen2.5-coder:7b      # about 8 GB RAM; try a larger model if your machine allows
+export OLLAMA_MODEL=qwen2.5-coder:7b   # fix the model for the whole study and report it
 mvn test
 mvn spring-boot:run
+```
+
+Hosted OpenAI instead (the Maven profile `-Popenai` swaps the starter):
+
+```bash
+export OPENAI_API_KEY=...
+export OPENAI_MODEL=gpt-4o-mini
+mvn -Popenai spring-boot:run
 ```
 
 ```bash
@@ -40,14 +50,17 @@ curl -X POST localhost:8080/api/feedback -H 'Content-Type: application/json' -d 
 }'
 ```
 
-## Pilot run with a hosted model
+## Pilot run
 
 Smoke-test the detector before touching real student data. This sends 12 synthetic submissions through the detector and prints precision, recall, F1 and kappa:
 
 ```bash
-export OPENAI_API_KEY=...
+ollama serve &                   # if Ollama is not already running
 mvn spring-boot:run -Dspring-boot.run.profiles=pilot
+# hosted model instead: OPENAI_API_KEY=... mvn -Popenai spring-boot:run -Dspring-boot.run.profiles=pilot
 ```
+
+Small local models sometimes return JSON the detector cannot parse. If the pilot fails with a parsing error, try a larger model before changing the code.
 
 The bundled set (`src/main/resources/pilot/synthetic-gold.json`) was written and labelled by an AI assistant, not by instructors. Use it only to check that the pipeline works and to compare models. Do not report its numbers as study results. For the real RQ1 evaluation, point the runner at an instructor-labelled file in the same format (anonymised, kept outside git):
 
@@ -55,7 +68,7 @@ The bundled set (`src/main/resources/pilot/synthetic-gold.json`) was written and
 mvn spring-boot:run -Dspring-boot.run.profiles=pilot -Dspring-boot.run.arguments=--study.pilot.gold-file=study-data/gold.json
 ```
 
-To compare models, run the pilot once per model (set `LLM_MODEL`) and record the scores.
+To compare models, run the pilot once per model (set `OLLAMA_MODEL` or `OPENAI_MODEL`) and record the scores.
 
 ## Status
 
