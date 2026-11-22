@@ -50,6 +50,10 @@ curl -X POST localhost:8080/api/feedback -H 'Content-Type: application/json' -d 
 }'
 ```
 
+## Web page
+
+With the app running, open http://localhost:8080 . Paste a task, your Java code and an explanation, choose a feedback type and press the button. The page shows the feedback and, for the misconception-aware type, the misconception found with its corrective idea. It uses `POST /api/feedback` and `GET /api/catalogue`. The page is a first version: no accounts, no history.
+
 ## Pilot run
 
 Smoke-test the detector before touching real student data. This sends 12 synthetic submissions through the detector and prints precision, recall, F1 and kappa:
