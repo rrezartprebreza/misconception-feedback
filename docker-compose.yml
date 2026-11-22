@@ -1,0 +1,17 @@
+# Local model for the tool. Student data stays on your machine.
+#   docker compose up -d
+#   docker compose exec ollama ollama pull qwen2.5-coder:7b
+# Then run the app with: mvn spring-boot:run
+# On Mac, Docker cannot use the GPU, so answers are slow; native Ollama is faster there.
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: misconception-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  ollama-models:

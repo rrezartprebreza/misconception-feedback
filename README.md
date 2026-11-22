@@ -42,6 +42,14 @@ mvn test
 mvn spring-boot:run
 ```
 
+Ollama in Docker instead of installing it (on a Mac there is no GPU access, so it is slower; try a smaller model such as `qwen2.5-coder:3b`):
+
+```bash
+docker compose up -d
+docker compose exec ollama ollama pull qwen2.5-coder:7b
+mvn spring-boot:run
+```
+
 Hosted OpenAI instead (the Maven profile `-Popenai` swaps the starter):
 
 ```bash
