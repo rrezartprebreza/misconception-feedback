@@ -67,6 +67,18 @@ export OPENAI_MODEL=<model name from the provider>
 mvn -Popenai spring-boot:run
 ```
 
+Groq (free plan with rate limits):
+
+```bash
+export OPENAI_BASE_URL=https://api.groq.com/openai
+export OPENAI_API_KEY=...                         # never commit keys
+export OPENAI_MODEL=openai/gpt-oss-20b
+export LLM_FALLBACK_MODELS=openai/gpt-oss-120b    # used automatically when the first model is rate limited
+mvn -Popenai spring-boot:run
+```
+
+`LLM_FALLBACK_MODELS` takes a comma-separated list. A model that fails is skipped for 60 seconds (`LLM_FALLBACK_COOLDOWN_SECONDS`). Do not use fallback in a study: the model must stay fixed and be reported.
+
 Some providers use a different path than `/v1/chat/completions`; set `OPENAI_COMPLETIONS_PATH` if so. Hosted services send student code to a third party, so for a real study check their data terms and get the use approved.
 
 
