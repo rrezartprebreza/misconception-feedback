@@ -7,10 +7,11 @@
   <link rel="stylesheet" href="/app.css">
 </head>
 <body>
-  <div class="topbar">
+  <header class="topbar">
     <h1>Misconception feedback</h1>
+    <p class="tagline">Write your answer. Get feedback on the idea behind the mistake.</p>
     <span class="chip" id="language">Java</span>
-  </div>
+  </header>
 
   <main class="shell">
     <nav class="rail" aria-label="Exercises">
@@ -28,39 +29,44 @@
 
       <div class="field">
         <label for="code" id="codeLabel">Your Java code</label>
-        <div class="editor">
-          <div class="gutter" id="gutter" aria-hidden="true">1</div>
-          <textarea id="code" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+        <div class="editorframe" id="frame">
+          <div class="editorbar">
+            <span id="fileName">Answer.java</span>
+            <span class="state" id="markState" hidden>Marked up</span>
+            <button class="linkbtn" id="editAgain" type="button" hidden>Edit code</button>
+          </div>
+          <div class="editor" id="editor">
+            <div class="gutter" id="gutter" aria-hidden="true">1</div>
+            <textarea id="code" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Write or paste your answer here"></textarea>
+          </div>
+          <div class="marked" id="marked" role="group" aria-label="Your code with the lines that show the misconception marked" hidden></div>
         </div>
       </div>
 
       <div class="field">
         <label for="explanation">Explain how it works <span class="hint">(optional, in your own words)</span></label>
-        <textarea class="plain" id="explanation" rows="3"></textarea>
+        <textarea class="plain" id="explanation" rows="2"></textarea>
       </div>
 
-      <div class="field">
-        <div class="label" id="styleLabel">Feedback style</div>
-        <div class="segmented" role="radiogroup" aria-labelledby="styleLabel">
-          <input type="radio" name="condition" id="informed" value="INFORMED" checked>
-          <label for="informed">Misconception-aware</label>
-          <input type="radio" name="condition" id="generic" value="GENERIC">
-          <label for="generic">Generic</label>
+      <div class="controls">
+        <div>
+          <div class="label" id="styleLabel">Feedback style</div>
+          <div class="segmented" role="radiogroup" aria-labelledby="styleLabel">
+            <input type="radio" name="condition" id="informed" value="INFORMED" checked>
+            <label for="informed">Misconception-aware</label>
+            <input type="radio" name="condition" id="generic" value="GENERIC">
+            <label for="generic">Generic</label>
+          </div>
         </div>
-      </div>
-
-      <div class="actions">
         <button class="btn" id="send" type="button">Get feedback</button>
-        <span class="hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></span>
       </div>
+      <p class="hint" style="margin:.6rem 0 0">Misconception-aware names the idea behind your mistake. Generic gives ordinary hints. Press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to send.</p>
       <p class="error" id="error" role="alert"></p>
       <p class="note">An AI model writes the feedback and the misconception labels are experimental. Check them against your course material. Do not paste names or other personal data.</p>
     </section>
 
     <section class="feedback-col" aria-label="Feedback" aria-live="polite">
-      <div class="panel" id="out">
-        <p class="empty">Your feedback appears here. It explains the idea behind a mistake, not only the line that is wrong.</p>
-      </div>
+      <div class="panel" id="out"></div>
     </section>
   </main>
 
@@ -69,6 +75,7 @@
     var catalogue = {};
     var tasks = [];
     var selected = null;            // a task object, or null for "my own task"
+    var submittedCode = '';
     var code = document.getElementById('code');
     var send = document.getElementById('send');
     var out = document.getElementById('out');
@@ -76,14 +83,34 @@
     var customTask = document.getElementById('customTask');
     var taskCard = document.getElementById('taskCard');
     var list = document.getElementById('exercises');
+    var frame = document.getElementById('frame');
+    var editor = document.getElementById('editor');
+    var marked = document.getElementById('marked');
+    var editAgain = document.getElementById('editAgain');
+    var markState = document.getElementById('markState');
 
     attachEditor(code, document.getElementById('gutter'));
+
+    function el(tag, cls, text) {
+      var e = document.createElement(tag);
+      if (cls) { e.className = cls; }
+      if (text !== undefined) { e.textContent = text; }
+      return e;
+    }
+
+    /* ---------- exercises ---------- */
     function loadCatalogue() {
       catalogue = {};
       return fetch(withLanguage('/api/catalogue'))
         .then(function (r) { return r.ok ? r.json() : []; })
         .then(function (items) { items.forEach(function (m) { catalogue[m.id] = m; }); })
         .catch(function () {});
+    }
+
+    // "Searching: binary search" shows as a small group name above the exercise name.
+    function splitTitle(title) {
+      var at = title.indexOf(':');
+      return at > 0 ? { group: title.slice(0, at), name: title.slice(at + 1).trim() } : { group: '', name: title };
     }
 
     function renderRail() {
@@ -94,7 +121,9 @@
         b.type = 'button';
         b.setAttribute('aria-current', String(t === selected));
         if (t) {
-          b.textContent = t.title;
+          var parts = splitTitle(t.title);
+          if (parts.group) { b.appendChild(el('span', 'topic', parts.group)); }
+          b.appendChild(document.createTextNode(parts.name));
         } else {
           b.textContent = 'My own task';
         }
@@ -123,70 +152,179 @@
 
     function loadLanguageData() { return Promise.all([loadCatalogue(), loadTasks()]); }
 
-    // The drop-down switches language without a reload. The old result belongs to the old language, so clear it.
-    applyLanguage(true, function () {
-      out.textContent = '';
-      out.appendChild(el('p', 'empty', 'No feedback yet.'));
-      error.textContent = '';
-      loadLanguageData();
-    }).then(loadLanguageData);
-
     function currentTask() { return selected ? selected.text : customTask.value; }
 
-    function el(tag, cls, text) {
-      var e = document.createElement(tag);
-      if (cls) { e.className = cls; }
-      if (text !== undefined) { e.textContent = text; }
-      return e;
+    /* ---------- the feedback panel ---------- */
+    // One card: the idea that leads to the mistake, a crack, then what is true. `num` matches the pin in the code.
+    function faultCard(num, name, topic, belief, truth, evidence, lineNos) {
+      var box = el('div', 'fault');
+      var head = el('header');
+      head.appendChild(el('span', 'pinno', String(num)));
+      head.appendChild(el('span', null, name));
+      if (topic) { head.appendChild(el('span', 'topic', topic)); }
+      box.appendChild(head);
+      var b = el('div', 'belief');
+      b.appendChild(el('b', null, 'An idea that leads to this mistake'));
+      b.appendChild(el('p', null, belief));
+      box.appendChild(b);
+      var t = el('div', 'truth');
+      t.appendChild(el('b', null, 'What is actually true'));
+      t.appendChild(el('p', null, truth));
+      box.appendChild(t);
+      if (evidence) {
+        var where = el('div', 'where', lineNos && lineNos.length
+          ? 'Seen in your code, line ' + lineNos.join(', ') + ': '
+          : 'Seen in your answer: ');
+        where.appendChild(el('code', null, evidence));
+        box.appendChild(where);
+      }
+      return box;
+    }
+
+    // Before the first answer, show what a result looks like so the page explains itself.
+    function showExample() {
+      out.textContent = '';
+      out.classList.add('sample');
+      out.appendChild(el('p', 'empty', 'Your feedback appears here. It explains the idea behind a mistake, not only the line that is wrong.'));
+      out.appendChild(el('p', 'eg', 'Example of a result'));
+      out.appendChild(faultCard(1, 'Loop that never ends', 'Searching',
+        'Setting lo = mid is enough to shrink the range.',
+        'Each pass must make the range smaller. With two items left, mid equals lo, so lo = mid changes nothing. Use lo = mid + 1 so the middle you already checked is left out.',
+        'lo = mid', null));
     }
 
     var timer = null;
     function showWaiting() {
+      out.classList.remove('sample');
       out.textContent = '';
       var box = el('div', 'waiting');
       var line = el('p');
-      var strong = el('strong', null, 'Reading your code');
       var secs = el('span', null, ' 0 s');
-      line.appendChild(strong);
+      line.appendChild(el('strong', null, 'Reading your code'));
       line.appendChild(secs);
       box.appendChild(line);
       box.appendChild(el('div', 'bar'));
       box.appendChild(el('p', 'hint', 'A local model can take up to a minute on the first request.'));
       out.appendChild(box);
+      frame.classList.add('scanning');
       var start = Date.now();
       clearInterval(timer);
       timer = setInterval(function () { secs.textContent = ' ' + Math.round((Date.now() - start) / 1000) + ' s'; }, 1000);
     }
 
-    function showResult(result) {
+    function stopWaiting() {
       clearInterval(timer);
+      frame.classList.remove('scanning');
+    }
+
+    /* ---------- marking the code ---------- */
+    function norm(s) { return s.replace(/\s+/g, ' ').trim(); }
+
+    // Zero-based indexes of the lines of `text` that contain the model's evidence (at most four).
+    function findLines(text, evidence) {
+      var hits = [];
+      if (!evidence) { return hits; }
+      var lines = text.split('\n').map(norm);
+      var wanted = evidence.split('\n').map(norm).filter(function (s) { return s.length >= 3; });
+      lines.forEach(function (line, i) {
+        if (wanted.some(function (w) { return line.indexOf(w) >= 0; })) { hits.push(i); }
+      });
+      if (!hits.length) {
+        lines.forEach(function (line, i) {
+          if (line.length >= 6 && wanted.some(function (w) { return w.indexOf(line) >= 0; })) { hits.push(i); }
+        });
+      }
+      return hits.slice(0, 4);
+    }
+
+    function renderMarked(text, pins) {   // pins: { lineIndex: [card numbers] }
+      marked.textContent = '';
+      var rows = el('div', 'rows');
+      var order = 0;
+      text.split('\n').forEach(function (line, i) {
+        var row = el('div', 'ln');
+        var nums = pins[i];
+        row.appendChild(nums ? el('span', 'pin', nums.join(',')) : el('span'));
+        row.appendChild(el('span', 'no', String(i + 1)));
+        row.appendChild(el('span', 'tx', line === '' ? ' ' : line));
+        if (nums) {
+          row.classList.add('hit');
+          row.style.setProperty('--i', String(order++));
+          row.setAttribute('data-m', nums.join(' '));
+        }
+        rows.appendChild(row);
+      });
+      marked.appendChild(rows);
+    }
+
+    function showMarked() {
+      editor.hidden = true;
+      marked.hidden = false;
+      editAgain.hidden = false;
+      markState.hidden = false;
+      marked.scrollTop = 0;
+    }
+
+    function showEditor() {
+      marked.hidden = true;
+      editor.hidden = false;
+      editAgain.hidden = true;
+      markState.hidden = true;
+    }
+
+    editAgain.addEventListener('click', function () { showEditor(); code.focus(); });
+
+    function showResult(result) {
+      stopWaiting();
+      out.classList.remove('sample');
       out.textContent = '';
-      out.appendChild(el('h2', null, 'Feedback'));
+      var head = el('div', 'resulthead');
+      head.appendChild(el('h2', null, 'Feedback'));
+      head.appendChild(el('span', 'tag', result.condition === 'GENERIC' ? 'Generic' : 'Misconception-aware'));
+      out.appendChild(head);
       out.appendChild(el('p', 'reading', result.feedback));
 
-      (result.matches || []).forEach(function (match) {
+      var matches = result.matches || [];
+      var pins = {};
+      var cards = [];
+      matches.forEach(function (match, k) {
+        var num = k + 1;
         var entry = catalogue[match.misconceptionId];
-        var box = el('div', 'contrast');
-        var head = el('header', null, 'Possible misconception: ' + (entry ? entry.name : match.misconceptionId));
-        if (entry) { head.appendChild(el('span', null, entry.topic)); }
-        box.appendChild(head);
-        if (entry) {
-          var belief = el('div', 'belief');
-          belief.appendChild(el('b', null, 'An idea that leads to this mistake'));
-          belief.appendChild(el('p', null, entry.belief));
-          box.appendChild(belief);
-          var truth = el('div', 'truth');
-          truth.appendChild(el('b', null, 'What is actually true'));
-          truth.appendChild(el('p', null, entry.correction));
-          box.appendChild(truth);
+        var found = findLines(submittedCode, match.evidence);
+        found.forEach(function (i) { (pins[i] = pins[i] || []).push(num); });
+        var card = faultCard(num,
+          entry ? entry.name : match.misconceptionId,
+          entry ? entry.topic : '',
+          entry ? entry.belief : 'Not in the catalogue.',
+          entry ? entry.correction : '',
+          match.evidence,
+          found.map(function (i) { return i + 1; }));
+        card.classList.add('reveal');
+        card.style.setProperty('--i', String(k));
+        // Hovering a card lights up its lines in the code.
+        function light(on) {
+          Array.prototype.forEach.call(marked.querySelectorAll('.ln.hit'), function (row) {
+            var own = (row.getAttribute('data-m') || '').split(' ').indexOf(String(num)) >= 0;
+            row.classList.toggle('focus', on && own);
+          });
         }
-        if (match.evidence) {
-          var where = el('div', 'where', 'Seen in your answer: ');
-          where.appendChild(el('code', null, match.evidence));
-          box.appendChild(where);
-        }
-        out.appendChild(box);
+        card.addEventListener('mouseenter', function () { light(true); });
+        card.addEventListener('mouseleave', function () { light(false); });
+        out.appendChild(card);
+        cards.push(card);
       });
+
+      if (!matches.length && result.condition !== 'GENERIC') {
+        out.appendChild(el('p', 'clear', 'No misconception from the list was found in your answer.'));
+      }
+      // On a phone the feedback sits below the form, so bring it into view.
+      if (window.innerWidth <= 820 && out.scrollIntoView) { out.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      if (Object.keys(pins).length) {
+        renderMarked(submittedCode, pins);
+        showMarked();
+      } else {
+        showEditor();
+      }
     }
 
     function submit() {
@@ -194,7 +332,9 @@
       if (!code.value.trim()) { error.textContent = 'Write or paste some code first.'; code.focus(); return; }
       if (!currentTask().trim()) { error.textContent = 'Choose an exercise or describe your task.'; return; }
 
+      submittedCode = code.value;
       send.disabled = true;
+      showEditor();
       showWaiting();
 
       fetch('/api/feedback', {
@@ -215,9 +355,8 @@
         })
         .then(showResult)
         .catch(function (e) {
-          clearInterval(timer);
-          out.textContent = '';
-          out.appendChild(el('p', 'empty', 'No feedback yet.'));
+          stopWaiting();
+          showExample();
           error.textContent = e.message === 'Failed to fetch' ? friendlyError(500) : (e.message || friendlyError(500));
         })
         .finally(function () { send.disabled = false; });
@@ -227,6 +366,17 @@
     document.addEventListener('keydown', function (e) {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !send.disabled) { submit(); }
     });
+
+    showExample();
+
+    // The switch changes language without a reload. The old result belongs to the old language, so clear it.
+    applyLanguage(true, function () {
+      stopWaiting();
+      showEditor();
+      showExample();
+      error.textContent = '';
+      loadLanguageData();
+    }).then(loadLanguageData);
   </script>
 </body>
 </html>
