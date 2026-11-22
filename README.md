@@ -77,6 +77,12 @@ export LLM_FALLBACK_MODELS=openai/gpt-oss-120b    # used automatically when the 
 mvn -Popenai spring-boot:run
 ```
 
+To avoid typing the `export` lines every time, copy `.env.example` to `.env` in the project folder and fill it in. The app reads `.env` on start. It is git-ignored; never commit it.
+
+```bash
+cp .env.example .env
+```
+
 `LLM_FALLBACK_MODELS` takes a comma-separated list. A model that fails is skipped for 60 seconds (`LLM_FALLBACK_COOLDOWN_SECONDS`). Do not use fallback in a study: the model must stay fixed and be reported.
 
 Some providers use a different path than `/v1/chat/completions`; set `OPENAI_COMPLETIONS_PATH` if so. Hosted services send student code to a third party, so for a real study check their data terms and get the use approved.
