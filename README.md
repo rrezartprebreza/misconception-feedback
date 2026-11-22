@@ -58,6 +58,18 @@ export OPENAI_MODEL=gpt-4o-mini
 mvn -Popenai spring-boot:run
 ```
 
+Other OpenAI-compatible services (Grok, Gemini, Groq, OpenRouter and similar) use the same profile. Set the base URL, key and model from the provider's documentation:
+
+```bash
+export OPENAI_BASE_URL=https://api.x.ai          # example: Grok
+export OPENAI_API_KEY=...
+export OPENAI_MODEL=<model name from the provider>
+mvn -Popenai spring-boot:run
+```
+
+Some providers use a different path than `/v1/chat/completions`; set `OPENAI_COMPLETIONS_PATH` if so. Hosted services send student code to a third party, so for a real study check their data terms and get the use approved.
+
+
 ```bash
 curl -X POST localhost:8080/api/feedback -H 'Content-Type: application/json' -d '{
   "id": "P01",
