@@ -4,6 +4,7 @@ import dev.rrezart.misconception.catalogue.Misconception;
 import dev.rrezart.misconception.catalogue.MisconceptionCatalogue;
 import dev.rrezart.misconception.model.FeedbackCondition;
 import dev.rrezart.misconception.model.Match;
+import dev.rrezart.misconception.model.ProgrammingLanguage;
 import dev.rrezart.misconception.model.Submission;
 import org.junit.jupiter.api.Test;
 
@@ -57,5 +58,26 @@ class PromptFactoryTest {
     @Test
     void detectionPromptListsCatalogueIds() {
         assertThat(prompts.detectionSystem(catalogue)).contains("M03").contains("Binary search");
+    }
+    @Test
+    void promptsNameTheConfiguredLanguageAndUseItsFence() {
+        PromptFactory python = new PromptFactory(ProgrammingLanguage.PYTHON);
+
+        assertThat(python.detectionSystem(catalogue)).contains("Python");
+        assertThat(python.feedbackSystem()).contains("Python");
+        assertThat(python.detectionUser(submission)).contains("```python");
+    }
+
+    @Test
+    void csharpUsesItsDisplayNameAndFence() {
+        PromptFactory csharp = new PromptFactory(ProgrammingLanguage.CSHARP);
+
+        assertThat(csharp.detectionSystem(catalogue)).contains("C#");
+        assertThat(csharp.detectionUser(submission)).contains("```csharp");
+    }
+
+    @Test
+    void defaultConstructorKeepsJava() {
+        assertThat(prompts.detectionUser(submission)).contains("```java");
     }
 }

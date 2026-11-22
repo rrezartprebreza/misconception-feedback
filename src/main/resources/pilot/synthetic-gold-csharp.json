@@ -1,0 +1,105 @@
+[
+  {
+    "id": "S01",
+    "task": "Insert a new node after node a in a singly linked list.",
+    "code": "Node a = new Node(1);\nNode b = a;\nb.Next = new Node(2);\nConsole.WriteLine(a.Next == null); // expected: True",
+    "explanation": "b is a separate copy of a, so changing b.Next does not change a.",
+    "labels": [
+      "M01"
+    ]
+  },
+  {
+    "id": "S02",
+    "task": "Compare two arrays to see whether they hold the same numbers.",
+    "code": "int[] x = { 1, 2, 3 };\nint[] y = { 1, 2, 3 };\nif (x == y)\n{\n    Console.WriteLine(\"same\");\n}",
+    "explanation": "The == operator checks whether the two arrays hold the same values.",
+    "labels": [
+      "M02"
+    ]
+  },
+  {
+    "id": "S03",
+    "task": "Implement binary search on a sorted int array.",
+    "code": "int Search(int[] a, int k)\n{\n    int lo = 0, hi = a.Length - 1;\n    while (lo < hi)\n    {\n        int mid = (lo + hi) / 2;\n        if (a[mid] < k) lo = mid; else hi = mid;\n    }\n    return a[lo] == k ? lo : -1;\n}",
+    "explanation": "It halves the range each time until one element is left.",
+    "labels": [
+      "M03"
+    ]
+  },
+  {
+    "id": "S04",
+    "task": "State the running time of the method below.",
+    "code": "for (int i = 0; i < n; i++)\n{\n    for (int j = 0; j < 10; j++)\n    {\n        count++;\n    }\n}",
+    "explanation": "There are two nested loops, so the running time is O(n^2).",
+    "labels": [
+      "M04"
+    ]
+  },
+  {
+    "id": "S05",
+    "task": "Explain the cost of looking up a key in a Dictionary that holds one million keys.",
+    "code": "var map = new Dictionary<string, int>();\nforeach (var w in words)\n{\n    map[w] = w.Length;\n}\nint x = map[\"hello\"];",
+    "explanation": "A Dictionary lookup is always O(1), whatever the keys are.",
+    "labels": [
+      "M05"
+    ]
+  },
+  {
+    "id": "S06",
+    "task": "State the cost of inserting the keys 1, 2, 3, ..., n in this order into a binary search tree.",
+    "code": "Node root = null;\nfor (int k = 1; k <= n; k++)\n{\n    root = Insert(root, k);\n}",
+    "explanation": "A binary search tree keeps its height at log n, so each insert costs O(log n).",
+    "labels": [
+      "M06"
+    ]
+  },
+  {
+    "id": "S07",
+    "task": "Write a recursive method that returns n factorial.",
+    "code": "int Fact(int n)\n{\n    return n * Fact(n - 1);\n}",
+    "explanation": "The method multiplies n by the factorial of the smaller number until it finishes.",
+    "labels": [
+      "M07"
+    ]
+  },
+  {
+    "id": "S08",
+    "task": "Remove all negative numbers from a List<int>.",
+    "code": "foreach (int x in nums)\n{\n    if (x < 0)\n    {\n        nums.Remove(x);\n    }\n}",
+    "explanation": "The loop visits every element once and removes the negative ones.",
+    "labels": [
+      "M08"
+    ]
+  },
+  {
+    "id": "S09",
+    "task": "Implement binary search on a sorted int array.",
+    "code": "int Search(int[] a, int k)\n{\n    int lo = 0, hi = a.Length - 1;\n    while (lo <= hi)\n    {\n        int mid = lo + (hi - lo) / 2;\n        if (a[mid] == k) return mid;\n        if (a[mid] < k) lo = mid + 1; else hi = mid - 1;\n    }\n    return -1;\n}",
+    "explanation": "Each step discards the half that cannot contain k, and lo or hi always moves past mid, so the interval shrinks.",
+    "labels": []
+  },
+  {
+    "id": "S10",
+    "task": "Remove all negative numbers from a List<int>.",
+    "code": "nums.RemoveAll(x => x < 0);",
+    "explanation": "RemoveAll walks the list once and removes every element that matches the condition.",
+    "labels": []
+  },
+  {
+    "id": "S11",
+    "task": "Compare two arrays to see whether they hold the same numbers.",
+    "code": "int[] x = { 1, 2, 3 };\nint[] y = { 1, 2, 3 };\nif (x.SequenceEqual(y))\n{\n    Console.WriteLine(\"same\");\n}",
+    "explanation": "SequenceEqual compares the elements one by one, unlike == which compares references.",
+    "labels": []
+  },
+  {
+    "id": "S12",
+    "task": "Remove every entry equal to \"a\" from a list of strings and compare two arrays of results.",
+    "code": "foreach (string s in words)\n{\n    if (s == \"a\")\n    {\n        words.Remove(s);\n    }\n}\nbool same = first == second; // first and second are int[]",
+    "explanation": "The loop removes each match as it finds it, and == tells me whether the two arrays hold equal values.",
+    "labels": [
+      "M02",
+      "M08"
+    ]
+  }
+]

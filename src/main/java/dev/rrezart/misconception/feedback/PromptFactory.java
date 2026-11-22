@@ -4,6 +4,7 @@ import dev.rrezart.misconception.catalogue.Misconception;
 import dev.rrezart.misconception.catalogue.MisconceptionCatalogue;
 import dev.rrezart.misconception.model.FeedbackCondition;
 import dev.rrezart.misconception.model.Match;
+import dev.rrezart.misconception.model.ProgrammingLanguage;
 import dev.rrezart.misconception.model.Submission;
 
 import java.util.List;
@@ -14,9 +15,20 @@ import java.util.List;
  */
 public class PromptFactory {
 
+    private final ProgrammingLanguage language;
+
+    public PromptFactory() {
+        this(ProgrammingLanguage.JAVA);
+    }
+
+    public PromptFactory(ProgrammingLanguage language) {
+        this.language = language;
+    }
+
     public String detectionSystem(MisconceptionCatalogue catalogue) {
         StringBuilder sb = new StringBuilder();
-        sb.append("You analyse a student's Java answer for a data structures and algorithms course.\n");
+        sb.append("You analyse a student's ").append(language.displayName())
+                .append(" answer for a data structures and algorithms course.\n");
         sb.append("Decide which misconceptions from the catalogue below the answer shows evidence of.\n");
         sb.append("Rules: use only ids from the catalogue; point to the evidence in the answer; ");
         sb.append("give a confidence between 0 and 1; return an empty list if there is no evidence.\n\n");
@@ -33,7 +45,8 @@ public class PromptFactory {
     }
 
     public String feedbackSystem() {
-        return "You give short feedback to a student on a Java data structures and algorithms exercise. "
+        return "You give short feedback to a student on a " + language.displayName()
+                + " data structures and algorithms exercise. "
                 + "Do not give the full solution. Explain what is wrong or unclear, and end with one "
                 + "guiding question that helps the student fix it themselves. Keep it under 150 words.";
     }
@@ -64,7 +77,7 @@ public class PromptFactory {
     private String submissionBlock(Submission s) {
         String explanation = (s.explanation() == null || s.explanation().isBlank()) ? "(none)" : s.explanation();
         return "Task:\n" + s.task()
-                + "\n\nStudent code:\n```java\n" + s.code() + "\n```"
+                + "\n\nStudent code:\n```" + language.fence() + "\n" + s.code() + "\n```"
                 + "\n\nStudent explanation:\n" + explanation;
     }
 

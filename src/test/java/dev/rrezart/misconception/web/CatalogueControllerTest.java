@@ -10,7 +10,7 @@ class CatalogueControllerTest {
 
     @Test
     void returnsEveryCatalogueEntry() {
-        MisconceptionCatalogue catalogue = MisconceptionCatalogue.fromClasspath(new ObjectMapper(), "/catalogue.json");
+        MisconceptionCatalogue catalogue = MisconceptionCatalogue.fromClasspath(new ObjectMapper(), "/catalogue-java.json");
 
         assertThat(new CatalogueController(catalogue).all()).hasSize(catalogue.size());
     }

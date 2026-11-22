@@ -3,6 +3,7 @@ package dev.rrezart.misconception.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.rrezart.misconception.feedback.Anonymiser;
 import dev.rrezart.misconception.feedback.FeedbackService;
+import dev.rrezart.misconception.model.ProgrammingLanguage;
 import dev.rrezart.misconception.study.JsonlStudyLog;
 import dev.rrezart.misconception.study.StudyLog;
 import dev.rrezart.misconception.study.StudyService;
@@ -18,11 +19,13 @@ import java.time.Clock;
 public class StudyConfig {
 
     @Bean
-    StudyTasks studyTasks(ObjectMapper mapper, @Value("${study.tasks-file:}") String tasksFile) {
+    StudyTasks studyTasks(ObjectMapper mapper,
+                          ProgrammingLanguage language,
+                          @Value("${study.tasks-file:}") String tasksFile) {
         if (tasksFile != null && !tasksFile.isBlank()) {
             return StudyTasks.fromFile(mapper, Path.of(tasksFile));
         }
-        return StudyTasks.fromClasspath(mapper, "/study/tasks.json");
+        return StudyTasks.fromClasspath(mapper, language.tasksResource());
     }
 
     @Bean

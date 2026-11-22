@@ -4,7 +4,7 @@ Research code for the study *Misconception-aware LLM feedback in undergraduate d
 
 A Spring Boot + Spring AI service with two feedback conditions:
 
-- **GENERIC**: the model sees the task, the student's Java code and explanation.
+- **GENERIC**: the model sees the task, the student's code and explanation.
 - **INFORMED**: the same, plus the misconception a detector found, with its false belief and corrective explanation.
 
 Both conditions use the same model and settings. The generic condition never calls the detector.
@@ -13,13 +13,23 @@ Both conditions use the same model and settings. The generic condition never cal
 
 | Piece | Where | What it does |
 | --- | --- | --- |
-| Catalogue | `src/main/resources/catalogue.json` | Eight candidate misconceptions (id, topic, belief, pattern, correction). Validate with instructors before use. |
+| Catalogue | `src/main/resources/catalogue-<language>.json` | Eight candidate misconceptions per language (id, topic, belief, pattern, correction). Validate with instructors before use. |
 | Detector | `detect/LlmDetector` | Asks the model which catalogue entries a submission shows; drops low-confidence matches and ids not in the catalogue. |
 | Prompts | `feedback/PromptFactory` | Every prompt used in the study, in one place so it can be published with the paper. |
 | Anonymiser | `feedback/Anonymiser` | Strips emails and `@author` lines before anything reaches a model. Not a guarantee; review samples by hand. |
 | Service | `feedback/FeedbackService` | Runs one submission under one condition. `detectOnly` supports the RQ1 accuracy evaluation. |
 | Metrics | `eval/AgreementMetrics` | Micro precision, recall, F1 and Cohen's kappa between detector and instructor labels. |
 | API | `web/FeedbackController` | `POST /api/feedback` |
+
+## Languages
+
+Java, Python and C# are supported. Pick one with `STUDY_LANGUAGE` (`java` by default, or `python`, `csharp`):
+
+```bash
+STUDY_LANGUAGE=python mvn spring-boot:run
+```
+
+Each language has its own files: `catalogue-<language>.json`, `study/tasks-<language>.json` and `pilot/synthetic-gold-<language>.json`. The misconception ids (M01 to M08) and the exercise ids are the same in all three, so results can be compared across languages. The Python and C# entries were adapted from the Java ones by an AI assistant and have not been checked by instructors. Run one language per study and report which one.
 
 ## Run
 
@@ -65,7 +75,7 @@ What the server does behind the page:
 - **Logging.** Every submission is appended to `study-data/submissions.jsonl` (ignored by git): timestamp, participant ID, exercise, topic, attempt, condition, model label, anonymised code and explanation, feedback and detector matches. Attempt numbers continue after a restart. Compare attempt 1 with the last attempt to see whether the misconception was corrected.
 - **Consent.** The consent text in `study.html` is a placeholder. Replace it with the text approved by your ethics committee before any student uses the page. The server refuses submissions without the consent flag.
 
-Set your own exercises with `study.tasks-file=study-data/tasks.json` (same format as `src/main/resources/study/tasks.json`; every exercise has topic 1 or 2). Set `STUDY_MODEL_LABEL` when you use a hosted model so the log records which one.
+Set your own exercises with `study.tasks-file=study-data/tasks.json` (same format as `src/main/resources/study/tasks-java.json`; every exercise has topic 1 or 2). Set `STUDY_MODEL_LABEL` when you use a hosted model so the log records which one.
 
 Participant IDs must be assigned by you, not chosen by students: letters, digits, `-` and `_` only, up to 20 characters. Do not use names.
 
@@ -81,7 +91,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=pilot
 
 Small local models sometimes return JSON the detector cannot parse. If the pilot fails with a parsing error, try a larger model before changing the code.
 
-The bundled set (`src/main/resources/pilot/synthetic-gold.json`) was written and labelled by an AI assistant, not by instructors. Use it only to check that the pipeline works and to compare models. Do not report its numbers as study results. For the real RQ1 evaluation, point the runner at an instructor-labelled file in the same format (anonymised, kept outside git):
+The bundled set (`src/main/resources/pilot/synthetic-gold-<language>.json`) was written and labelled by an AI assistant, not by instructors. Use it only to check that the pipeline works and to compare models. Do not report its numbers as study results. For the real RQ1 evaluation, point the runner at an instructor-labelled file in the same format (anonymised, kept outside git):
 
 ```bash
 mvn spring-boot:run -Dspring-boot.run.profiles=pilot -Dspring-boot.run.arguments=--study.pilot.gold-file=study-data/gold.json

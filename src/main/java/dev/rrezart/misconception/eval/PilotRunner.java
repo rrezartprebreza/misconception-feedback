@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.rrezart.misconception.catalogue.MisconceptionCatalogue;
 import dev.rrezart.misconception.feedback.FeedbackService;
+import dev.rrezart.misconception.model.ProgrammingLanguage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
@@ -27,15 +28,18 @@ public class PilotRunner implements CommandLineRunner {
     private final FeedbackService service;
     private final MisconceptionCatalogue catalogue;
     private final ObjectMapper mapper;
+    private final ProgrammingLanguage language;
     private final String goldFile;
 
     public PilotRunner(FeedbackService service,
                        MisconceptionCatalogue catalogue,
                        ObjectMapper mapper,
+                       ProgrammingLanguage language,
                        @Value("${study.pilot.gold-file:}") String goldFile) {
         this.service = service;
         this.catalogue = catalogue;
         this.mapper = mapper;
+        this.language = language;
         this.goldFile = goldFile;
     }
 
@@ -53,9 +57,9 @@ public class PilotRunner implements CommandLineRunner {
         if (goldFile != null && !goldFile.isBlank()) {
             return mapper.readValue(Files.readString(Path.of(goldFile)), type);
         }
-        try (InputStream in = PilotRunner.class.getResourceAsStream("/pilot/synthetic-gold.json")) {
+        try (InputStream in = PilotRunner.class.getResourceAsStream(language.goldResource())) {
             if (in == null) {
-                throw new IOException("Bundled synthetic gold set not found");
+                throw new IOException("Bundled synthetic gold set not found: " + language.goldResource());
             }
             return mapper.readValue(in, type);
         }

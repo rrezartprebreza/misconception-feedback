@@ -1,0 +1,105 @@
+[
+  {
+    "id": "S01",
+    "task": "Insert a new node after node a in a singly linked list.",
+    "code": "a = Node(1)\nb = a\nb.next = Node(2)\nprint(a.next)  # expected: None",
+    "explanation": "b is a separate copy of a, so changing b.next does not change a.",
+    "labels": [
+      "M01"
+    ]
+  },
+  {
+    "id": "S02",
+    "task": "Check whether the entered user name is admin.",
+    "code": "name = input()\nif name is 'admin':\n    grant_access()",
+    "explanation": "The is operator checks whether the two texts are the same.",
+    "labels": [
+      "M02"
+    ]
+  },
+  {
+    "id": "S03",
+    "task": "Implement binary search on a sorted list.",
+    "code": "def search(a, k):\n    lo, hi = 0, len(a) - 1\n    while lo < hi:\n        mid = (lo + hi) // 2\n        if a[mid] < k:\n            lo = mid\n        else:\n            hi = mid\n    return lo if a[lo] == k else -1",
+    "explanation": "It halves the range each time until one element is left.",
+    "labels": [
+      "M03"
+    ]
+  },
+  {
+    "id": "S04",
+    "task": "State the running time of the function below.",
+    "code": "for i in range(n):\n    for j in range(10):\n        count += 1",
+    "explanation": "There are two nested loops, so the running time is O(n^2).",
+    "labels": [
+      "M04"
+    ]
+  },
+  {
+    "id": "S05",
+    "task": "Explain the cost of looking up a key in a dict that holds one million keys.",
+    "code": "d = {}\nfor w in words:\n    d[w] = len(w)\nx = d['hello']",
+    "explanation": "A dict lookup is always O(1), whatever the keys are.",
+    "labels": [
+      "M05"
+    ]
+  },
+  {
+    "id": "S06",
+    "task": "State the cost of inserting the keys 1, 2, 3, ..., n in this order into a binary search tree.",
+    "code": "root = None\nfor k in range(1, n + 1):\n    root = insert(root, k)",
+    "explanation": "A binary search tree keeps its height at log n, so each insert costs O(log n).",
+    "labels": [
+      "M06"
+    ]
+  },
+  {
+    "id": "S07",
+    "task": "Write a recursive function that returns n factorial.",
+    "code": "def fact(n):\n    return n * fact(n - 1)",
+    "explanation": "The function multiplies n by the factorial of the smaller number until it finishes.",
+    "labels": [
+      "M07"
+    ]
+  },
+  {
+    "id": "S08",
+    "task": "Remove all negative numbers from a list.",
+    "code": "for x in nums:\n    if x < 0:\n        nums.remove(x)",
+    "explanation": "The loop visits every element once and removes the negative ones.",
+    "labels": [
+      "M08"
+    ]
+  },
+  {
+    "id": "S09",
+    "task": "Implement binary search on a sorted list.",
+    "code": "def search(a, k):\n    lo, hi = 0, len(a) - 1\n    while lo <= hi:\n        mid = (lo + hi) // 2\n        if a[mid] == k:\n            return mid\n        if a[mid] < k:\n            lo = mid + 1\n        else:\n            hi = mid - 1\n    return -1",
+    "explanation": "Each step discards the half that cannot contain k, and lo or hi always moves past mid, so the interval shrinks.",
+    "labels": []
+  },
+  {
+    "id": "S10",
+    "task": "Remove all negative numbers from a list.",
+    "code": "nums = [x for x in nums if x >= 0]",
+    "explanation": "The comprehension builds a new list that keeps only the non-negative values.",
+    "labels": []
+  },
+  {
+    "id": "S11",
+    "task": "Check whether the entered user name is admin.",
+    "code": "name = input()\nif name == 'admin':\n    grant_access()",
+    "explanation": "== compares the text of the two strings.",
+    "labels": []
+  },
+  {
+    "id": "S12",
+    "task": "Remove every entry equal to \"a\" from a list of strings.",
+    "code": "for s in words:\n    if s is 'a':\n        words.remove(s)",
+    "explanation": "is compares the strings, and the loop removes each match as it finds it.",
+    "labels": [
+      "M02",
+      "M08"
+    ]
+  }
+]

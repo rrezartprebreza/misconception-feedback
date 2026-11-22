@@ -9,6 +9,7 @@ import dev.rrezart.misconception.feedback.FeedbackService;
 import dev.rrezart.misconception.feedback.PromptFactory;
 import dev.rrezart.misconception.llm.LlmClient;
 import dev.rrezart.misconception.llm.SpringAiLlmClient;
+import dev.rrezart.misconception.model.ProgrammingLanguage;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -17,14 +18,20 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AppConfig {
 
+    /** One language per running instance: java, python or csharp. */
     @Bean
-    MisconceptionCatalogue catalogue(ObjectMapper mapper) {
-        return MisconceptionCatalogue.fromClasspath(mapper, "/catalogue.json");
+    ProgrammingLanguage programmingLanguage(@Value("${study.language:java}") String id) {
+        return ProgrammingLanguage.fromId(id);
     }
 
     @Bean
-    PromptFactory promptFactory() {
-        return new PromptFactory();
+    MisconceptionCatalogue catalogue(ObjectMapper mapper, ProgrammingLanguage language) {
+        return MisconceptionCatalogue.fromClasspath(mapper, language.catalogueResource());
+    }
+
+    @Bean
+    PromptFactory promptFactory(ProgrammingLanguage language) {
+        return new PromptFactory(language);
     }
 
     @Bean

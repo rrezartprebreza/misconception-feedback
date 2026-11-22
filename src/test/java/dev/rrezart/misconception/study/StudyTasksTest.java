@@ -12,7 +12,7 @@ class StudyTasksTest {
 
     @Test
     void bundledTasksCoverBothTopics() {
-        StudyTasks tasks = StudyTasks.fromClasspath(new ObjectMapper(), "/study/tasks.json");
+        StudyTasks tasks = StudyTasks.fromClasspath(new ObjectMapper(), "/study/tasks-java.json");
 
         assertThat(tasks.all()).extracting(StudyTask::topic).contains(1, 2);
         assertThat(tasks.find("binary-search")).isPresent();

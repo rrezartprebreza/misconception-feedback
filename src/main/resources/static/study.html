@@ -73,6 +73,17 @@
     var step2 = document.getElementById('step2');
     var taskSelect = document.getElementById('task');
     var taskText = document.getElementById('taskText');
+
+    fetch('/api/config')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (c) {
+        if (!c) return;
+        document.querySelector('label[for=code]').textContent = 'Your ' + c.languageName + ' code';
+        document.title = document.title.replace('Java', c.languageName);
+        var lead = document.querySelector('.lead');
+        if (lead) lead.textContent = lead.textContent.replace('Java', c.languageName);
+      })
+      .catch(function () {});
     var sendButton = document.getElementById('send');
     var out = document.getElementById('out');
 

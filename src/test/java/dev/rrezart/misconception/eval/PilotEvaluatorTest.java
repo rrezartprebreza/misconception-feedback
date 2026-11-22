@@ -16,10 +16,10 @@ import static org.assertj.core.api.Assertions.within;
 class PilotEvaluatorTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
-    private final MisconceptionCatalogue catalogue = MisconceptionCatalogue.fromClasspath(mapper, "/catalogue.json");
+    private final MisconceptionCatalogue catalogue = MisconceptionCatalogue.fromClasspath(mapper, "/catalogue-java.json");
 
     private List<GoldItem> syntheticSet() throws IOException {
-        try (InputStream in = getClass().getResourceAsStream("/pilot/synthetic-gold.json")) {
+        try (InputStream in = getClass().getResourceAsStream("/pilot/synthetic-gold-java.json")) {
             return mapper.readValue(in, new TypeReference<List<GoldItem>>() {
             });
         }

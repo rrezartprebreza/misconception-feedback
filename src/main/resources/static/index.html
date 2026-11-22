@@ -51,6 +51,17 @@
     var button = document.getElementById('send');
     var out = document.getElementById('out');
 
+    fetch('/api/config')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (c) {
+        if (!c) return;
+        document.querySelector('label[for=code]').textContent = 'Your ' + c.languageName + ' code';
+        document.title = document.title.replace('Java', c.languageName);
+        var lead = document.querySelector('.lead');
+        if (lead) lead.textContent = lead.textContent.replace('Java', c.languageName);
+      })
+      .catch(function () {});
+
     fetch('/api/catalogue')
       .then(function (r) { return r.ok ? r.json() : []; })
       .then(function (list) { list.forEach(function (m) { catalogue[m.id] = m; }); })

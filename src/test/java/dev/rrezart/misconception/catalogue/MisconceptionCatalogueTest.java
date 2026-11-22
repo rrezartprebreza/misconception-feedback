@@ -12,7 +12,7 @@ class MisconceptionCatalogueTest {
 
     @Test
     void loadsBundledCatalogue() {
-        MisconceptionCatalogue catalogue = MisconceptionCatalogue.fromClasspath(new ObjectMapper(), "/catalogue.json");
+        MisconceptionCatalogue catalogue = MisconceptionCatalogue.fromClasspath(new ObjectMapper(), "/catalogue-java.json");
 
         assertThat(catalogue.size()).isEqualTo(8);
         assertThat(catalogue.find("M03")).isPresent();
@@ -22,7 +22,7 @@ class MisconceptionCatalogueTest {
 
     @Test
     void everyEntryHasAllFields() {
-        MisconceptionCatalogue catalogue = MisconceptionCatalogue.fromClasspath(new ObjectMapper(), "/catalogue.json");
+        MisconceptionCatalogue catalogue = MisconceptionCatalogue.fromClasspath(new ObjectMapper(), "/catalogue-java.json");
 
         for (Misconception m : catalogue.all()) {
             assertThat(m.id()).isNotBlank();
