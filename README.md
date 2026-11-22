@@ -117,6 +117,19 @@ Set your own exercises with `study.tasks-file=study-data/tasks.json` (same forma
 
 Participant IDs must be assigned by you, not chosen by students: letters, digits, `-` and `_` only, up to 20 characters. Do not use names.
 
+## Collecting answers for an instructor-labelled evaluation
+
+Use this to build the labelled set for the detector evaluation. No model is called and students see no feedback.
+
+1. Set an instructor token in `.env`: `COLLECT_ADMIN_TOKEN=choose-a-long-secret`. The instructor pages stay switched off without it.
+2. Start the app (`STUDY_LANGUAGE=java` or `csharp`) and share `http://<your-address>:8080/collect.html` with students, with the participant IDs you hand out. Replace the consent text in `collect.html` with the text approved by your ethics committee first.
+3. Answers are anonymised (emails and `@author` lines) and saved to `study-data/answers.jsonl`.
+4. Open `/label.html`, enter the token and your labeller name, and tick the misconceptions each answer shows. The participant ID is hidden from you. Labels are saved to `study-data/labels.jsonl` and can be changed later.
+5. Press **Download labelled set** and save it as `study-data/gold.json`. A second labeller can label some answers under another name; **Compare** shows Cohen's kappa between the two of you.
+6. Run the evaluation on it (see Pilot run below).
+
+Run one language per instance. Everything under `study-data/` holds student work and is git-ignored.
+
 ## Pilot run
 
 Smoke-test the detector before touching real student data. This sends 12 synthetic submissions through the detector and prints precision, recall, F1 and kappa:

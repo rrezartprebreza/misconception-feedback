@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Share your answers</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <div class="topbar">
+    <h1>Share your answers</h1>
+    <span class="chip" id="language">Java</span>
+  </div>
+
+  <main class="narrow">
+    <section id="step1">
+      <div class="consent">
+        <strong>Information and consent</strong>
+        <p>
+          REPLACE THIS TEXT WITH THE CONSENT TEXT APPROVED BY YOUR ETHICS COMMITTEE.
+          It should say who runs the research, that your answer is stored without your name,
+          that it will be read by instructors and tested with AI models, that taking part is voluntary
+          and does not affect your grade, how long data is kept, and who to contact.
+          You will not see feedback on this page.
+        </p>
+        <label for="consent">
+          <input type="checkbox" id="consent">
+          <span>I have read this and agree to take part.</span>
+        </label>
+      </div>
+
+      <div class="field">
+        <label for="pid">Participant ID <span class="hint">(given to you by your instructor, not your name)</span></label>
+        <input type="text" id="pid" maxlength="20" autocomplete="off" placeholder="For example: P01">
+      </div>
+
+      <div class="actions"><button class="btn" id="start" type="button">Start</button></div>
+      <p id="step1error" class="error" role="alert"></p>
+    </section>
+
+    <section id="step2" hidden>
+      <div class="field" style="margin-top:0">
+        <label for="task">Exercise</label>
+        <select id="task"></select>
+      </div>
+      <div class="taskcard" id="taskText" style="margin-top:.8rem"></div>
+
+      <div class="field">
+        <label for="code" id="codeLabel">Your Java code</label>
+        <div class="editor">
+          <div class="gutter" id="gutter" aria-hidden="true">1</div>
+          <textarea id="code" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="explanation">Explain how it works <span class="hint">(in your own words)</span></label>
+        <textarea class="plain" id="explanation" rows="3"></textarea>
+      </div>
+
+      <div class="actions"><button class="btn" id="send" type="button">Submit answer</button></div>
+      <p id="step2error" class="error" role="alert"></p>
+      <p id="done" class="panel" role="status" hidden>Thank you. Your answer was saved. Choose another exercise to continue, or close this page.</p>
+      <p class="note">Do not write your name or other personal data in your answer.</p>
+    </section>
+  </main>
+
+  <style>.taskcard { background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--ink); border-radius: 6px; padding: .8rem 1rem; white-space: pre-wrap; } #done { margin-top: 1rem; }</style>
+  <script src="/app.js"></script>
+  <script>
+    var tasks = [];
+    var participantId = '';
+    var step1 = document.getElementById('step1');
+    var step2 = document.getElementById('step2');
+    var taskSelect = document.getElementById('task');
+    var taskText = document.getElementById('taskText');
+    var send = document.getElementById('send');
+    var done = document.getElementById('done');
+    var code = document.getElementById('code');
+    var explanation = document.getElementById('explanation');
+    var gutter = document.getElementById('gutter');
+
+    attachEditor(code, gutter);
+    applyLanguage();
+
+    function showTask() {
+      var chosen = tasks.filter(function (t) { return t.id === taskSelect.value; })[0];
+      taskText.textContent = chosen ? chosen.text : '';
+      done.hidden = true;
+    }
+
+    document.getElementById('start').addEventListener('click', function () {
+      var error = document.getElementById('step1error');
+      var id = document.getElementById('pid').value.trim();
+      error.textContent = '';
+      if (!document.getElementById('consent').checked) { error.textContent = 'Tick the box to agree to take part, then press Start.'; return; }
+      if (!/^[A-Za-z0-9_-]{1,20}$/.test(id)) { error.textContent = 'Enter the ID your instructor gave you. Use letters, digits, - or _ only.'; return; }
+
+      fetch('/api/study/tasks')
+        .then(function (r) { if (!r.ok) { throw new Error('Could not load the exercises. Tell your instructor.'); } return r.json(); })
+        .then(function (list) {
+          tasks = list;
+          participantId = id;
+          taskSelect.textContent = '';
+          list.forEach(function (t) {
+            var option = document.createElement('option');
+            option.value = t.id;
+            option.textContent = t.title;
+            taskSelect.appendChild(option);
+          });
+          showTask();
+          step1.hidden = true;
+          step2.hidden = false;
+        })
+        .catch(function (e) { error.textContent = e.message; });
+    });
+
+    taskSelect.addEventListener('change', function () { showTask(); code.value = ''; explanation.value = ''; code.dispatchEvent(new Event('input')); });
+
+    send.addEventListener('click', function () {
+      var error = document.getElementById('step2error');
+      error.textContent = '';
+      done.hidden = true;
+      if (!code.value.trim()) { error.textContent = 'Write some code first.'; code.focus(); return; }
+
+      send.disabled = true;
+      fetch('/api/collect/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          participantId: participantId,
+          taskId: taskSelect.value,
+          code: code.value,
+          explanation: explanation.value,
+          consent: true
+        })
+      })
+        .then(function (r) {
+          if (r.status === 400) { throw new Error('Your answer was not accepted. It may be too long (limit 20 000 characters).'); }
+          if (!r.ok) { throw new Error('The answer was not saved. Tell your instructor.'); }
+          code.value = '';
+          explanation.value = '';
+          code.dispatchEvent(new Event('input'));
+          done.hidden = false;
+        })
+        .catch(function (e) { error.textContent = e.message === 'Failed to fetch' ? 'Could not reach the server. Tell your instructor.' : e.message; })
+        .finally(function () { send.disabled = false; });
+    });
+  </script>
+</body>
+</html>

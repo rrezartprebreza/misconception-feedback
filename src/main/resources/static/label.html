@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Label answers</title>
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    .taskcard { background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--ink); border-radius: 6px; padding: .8rem 1rem; white-space: pre-wrap; }
+    .choices { display: grid; gap: .4rem; margin: 0; padding: 0; border: 0; }
+    .field > label.choice { display: flex; margin: 0; font-weight: 400; }
+    .choices legend { margin-bottom: .5rem; padding: 0; }
+    .choice { display: flex; gap: .7rem; align-items: flex-start; padding: .55rem .75rem; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; cursor: pointer; }
+    .choice:has(input:checked) { border-color: var(--ink); box-shadow: inset 3px 0 0 var(--ink); }
+    .choice input { margin-top: .3rem; }
+    .choice b { display: block; }
+    .choice small { color: var(--muted); }
+    .dot { display: inline-block; width: .55rem; height: .55rem; border-radius: 50%; margin-right: .5rem; background: var(--rule); }
+    .dot.done { background: var(--truth); }
+    .rail ul { max-height: 70vh; overflow-y: auto; }
+    .progress { color: var(--muted); font-size: .9rem; margin: .5rem 0 0; }
+    table.report { border-collapse: collapse; margin-top: .8rem; }
+    table.report th, table.report td { padding: .3rem .8rem; border-bottom: 1px solid var(--rule); text-align: left; }
+    .setup { max-width: 34rem; }
+    .row { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
+    .row input { width: auto; flex: 1 1 10rem; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>Label answers</h1>
+    <span class="chip" id="language">Java</span>
+  </div>
+
+  <main class="narrow setup" id="setup">
+    <p>Choose which misconceptions each answer shows, without seeing any model output. Your labels become the reference for the evaluation.</p>
+    <div class="field">
+      <label for="token">Instructor token <span class="hint">(the value of COLLECT_ADMIN_TOKEN)</span></label>
+      <input type="password" id="token" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="labeller">Your labeller name <span class="hint">(letters and digits, for example ana)</span></label>
+      <input type="text" id="labeller" maxlength="20" autocomplete="off">
+    </div>
+    <div class="actions"><button class="btn" id="open" type="button">Open answers</button></div>
+    <p class="error" id="setupError" role="alert"></p>
+  </main>
+
+  <main class="shell" id="work" hidden>
+    <nav class="rail" aria-label="Answers">
+      <h2>Answers</h2>
+      <ul id="list"></ul>
+      <p class="progress" id="progress"></p>
+    </nav>
+
+    <section aria-label="Answer to label">
+      <div class="field" style="margin-top:0">
+        <div class="label">Task</div>
+        <div class="taskcard" id="task"></div>
+      </div>
+      <div class="field">
+        <label for="code">Code</label>
+        <div class="editor">
+          <div class="gutter" id="gutter" aria-hidden="true">1</div>
+          <textarea id="code" readonly wrap="off" spellcheck="false"></textarea>
+        </div>
+      </div>
+      <div class="field">
+        <div class="label">Student's explanation</div>
+        <div class="taskcard" id="explanation"></div>
+      </div>
+
+      <fieldset class="choices field" id="choices">
+        <legend class="label">Which misconceptions does this answer show?</legend>
+      </fieldset>
+
+      <div class="actions">
+        <button class="btn" id="save" type="button">Save and next</button>
+        <span class="hint">You can come back and change a label later.</span>
+      </div>
+      <p class="error" id="error" role="alert"></p>
+    </section>
+
+    <section aria-label="Export and agreement" class="feedback-col">
+      <div class="panel">
+        <h2>Export</h2>
+        <p class="hint">Downloads your labelled answers in the format the evaluation reads. Save it as <code>study-data/gold.json</code>.</p>
+        <div class="actions"><button class="btn" id="export" type="button">Download labelled set</button></div>
+      </div>
+      <div class="panel" style="margin-top:1rem">
+        <h2>Agreement with a second labeller</h2>
+        <div class="row">
+          <input type="text" id="other" maxlength="20" placeholder="Second labeller's name" autocomplete="off">
+          <button class="btn" id="compare" type="button">Compare</button>
+        </div>
+        <div id="agreement" aria-live="polite"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+  <script>
+    var token = '', labeller = '';
+    var answers = [], catalogue = [], index = 0;
+    var code = document.getElementById('code');
+    var errorBox = document.getElementById('error');
+
+    attachEditor(code, document.getElementById('gutter'));
+    applyLanguage();
+
+    function el(tag, cls, text) {
+      var e = document.createElement(tag);
+      if (cls) { e.className = cls; }
+      if (text !== undefined) { e.textContent = text; }
+      return e;
+    }
+
+    function api(path, options) {
+      options = options || {};
+      options.headers = Object.assign({ 'X-Admin-Token': token }, options.headers || {});
+      return fetch(path, options).then(function (r) {
+        if (r.status === 404) { throw new Error('The instructor pages are off. Set COLLECT_ADMIN_TOKEN and restart the app.'); }
+        if (r.status === 401) { throw new Error('Wrong instructor token.'); }
+        if (!r.ok) { throw new Error('The server returned status ' + r.status + '.'); }
+        return r.json();
+      });
+    }
+
+    function buildChoices() {
+      var box = document.getElementById('choices');
+      box.querySelectorAll('.choice').forEach(function (c) { c.remove(); });
+      catalogue.forEach(function (m) {
+        var label = el('label', 'choice');
+        var input = document.createElement('input');
+        input.type = 'checkbox';
+        input.value = m.id;
+        input.addEventListener('change', function () { if (input.checked) { document.getElementById('none').checked = false; } });
+        var text = el('span');
+        text.appendChild(el('b', null, m.id + '  ' + m.name));
+        text.appendChild(el('small', null, m.topic + '. ' + m.belief));
+        label.appendChild(input);
+        label.appendChild(text);
+        box.appendChild(label);
+      });
+      var none = el('label', 'choice');
+      var noneInput = document.createElement('input');
+      noneInput.type = 'checkbox';
+      noneInput.id = 'none';
+      noneInput.addEventListener('change', function () {
+        if (noneInput.checked) { box.querySelectorAll('input[value]').forEach(function (i) { i.checked = false; }); }
+      });
+      var noneText = el('span');
+      noneText.appendChild(el('b', null, 'None of these'));
+      noneText.appendChild(el('small', null, 'The answer shows no misconception from the list (it may be correct, or wrong for another reason).'));
+      none.appendChild(noneInput);
+      none.appendChild(noneText);
+      box.appendChild(none);
+    }
+
+    function renderList() {
+      var ul = document.getElementById('list');
+      ul.textContent = '';
+      answers.forEach(function (a, i) {
+        var li = document.createElement('li');
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.setAttribute('aria-current', String(i === index));
+        b.appendChild(el('span', 'dot' + (a.labels !== null ? ' done' : '')));
+        b.appendChild(document.createTextNode(a.id));
+        b.addEventListener('click', function () { index = i; show(); });
+        li.appendChild(b);
+        ul.appendChild(li);
+      });
+      var done = answers.filter(function (a) { return a.labels !== null; }).length;
+      document.getElementById('progress').textContent = done + ' of ' + answers.length + ' labelled';
+    }
+
+    function show() {
+      errorBox.textContent = '';
+      var a = answers[index];
+      document.getElementById('task').textContent = a.task;
+      code.value = a.code;
+      code.dispatchEvent(new Event('input'));
+      code.scrollTop = 0;
+      document.getElementById('explanation').textContent = a.explanation || '(no explanation)';
+      var checked = a.labels || [];
+      document.querySelectorAll('#choices input[value]').forEach(function (i) { i.checked = checked.indexOf(i.value) >= 0; });
+      document.getElementById('none').checked = a.labels !== null && a.labels.length === 0;
+      renderList();
+    }
+
+    function openAnswers() {
+      var err = document.getElementById('setupError');
+      err.textContent = '';
+      token = document.getElementById('token').value;
+      labeller = document.getElementById('labeller').value.trim();
+      if (!/^[A-Za-z0-9_-]{1,20}$/.test(labeller)) { err.textContent = 'Use 1 to 20 letters, digits, - or _ for your name.'; return; }
+      Promise.all([
+        api('/api/collect/admin/answers?labeller=' + encodeURIComponent(labeller)),
+        fetch('/api/catalogue').then(function (r) { return r.json(); })
+      ]).then(function (results) {
+        answers = results[0];
+        catalogue = results[1];
+        if (!answers.length) { err.textContent = 'No answers have been collected yet. Share the collect page with your students first.'; return; }
+        buildChoices();
+        index = Math.max(0, answers.findIndex(function (a) { return a.labels === null; }));
+        document.getElementById('setup').hidden = true;
+        document.getElementById('work').hidden = false;
+        show();
+      }).catch(function (e) { err.textContent = e.message; });
+    }
+
+    function save() {
+      errorBox.textContent = '';
+      var ids = [];
+      document.querySelectorAll('#choices input[value]').forEach(function (i) { if (i.checked) { ids.push(i.value); } });
+      var none = document.getElementById('none').checked;
+      if (!ids.length && !none) { errorBox.textContent = 'Choose at least one misconception, or tick "None of these".'; return; }
+      var a = answers[index];
+      api('/api/collect/admin/labels', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ labeller: labeller, answerId: a.id, labels: ids })
+      }).then(function () {
+        a.labels = ids;
+        var next = answers.findIndex(function (x, i) { return i > index && x.labels === null; });
+        if (next < 0) { next = answers.findIndex(function (x) { return x.labels === null; }); }
+        if (next >= 0) { index = next; } else if (index < answers.length - 1) { index++; }
+        show();
+      }).catch(function (e) { errorBox.textContent = e.message; });
+    }
+
+    function download() {
+      api('/api/collect/admin/export?labeller=' + encodeURIComponent(labeller)).then(function (items) {
+        var blob = new Blob([JSON.stringify(items, null, 2)], { type: 'application/json' });
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'gold.json';
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }).catch(function (e) { errorBox.textContent = e.message; });
+    }
+
+    function compare() {
+      var other = document.getElementById('other').value.trim();
+      var out = document.getElementById('agreement');
+      out.textContent = '';
+      if (!other) { return; }
+      api('/api/collect/admin/agreement?a=' + encodeURIComponent(labeller) + '&b=' + encodeURIComponent(other)).then(function (r) {
+        if (!r.items) { out.appendChild(el('p', 'hint', 'No answers have been labelled by both of you yet.')); return; }
+        out.appendChild(el('p', null, r.items + ' answers labelled by both. Overall F1 ' + r.micro.f1.toFixed(2) + '.'));
+        var table = el('table', 'report');
+        var head = document.createElement('tr');
+        head.appendChild(el('th', null, 'Misconception'));
+        head.appendChild(el('th', null, 'Kappa'));
+        table.appendChild(head);
+        Object.keys(r.kappaById).forEach(function (id) {
+          var row = document.createElement('tr');
+          row.appendChild(el('td', null, id));
+          row.appendChild(el('td', null, Number(r.kappaById[id]).toFixed(2)));
+          table.appendChild(row);
+        });
+        out.appendChild(table);
+      }).catch(function (e) { out.appendChild(el('p', 'error', e.message)); });
+    }
+
+    document.getElementById('open').addEventListener('click', openAnswers);
+    document.getElementById('save').addEventListener('click', save);
+    document.getElementById('export').addEventListener('click', download);
+    document.getElementById('compare').addEventListener('click', compare);
+  </script>
+</body>
+</html>
