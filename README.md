@@ -130,6 +130,17 @@ Use this to build the labelled set for the detector evaluation. No model is call
 5. Choose a language, press **Download labelled set** and save it as `study-data/gold.json` (one file per language; the export holds that language only). A second labeller can label some answers under another name; **Compare** shows Cohen's kappa between the two of you.
 6. Run the evaluation on it (see Pilot run below).
 
+### Importing past answers
+
+If you already have student answers, you do not need students to use the page. Put each answer in a file inside a folder named after the exercise id (`list-insert`, `remove-negatives`, `binary-search`, `loop-complexity`). The extension sets the language (`.java`, `.py`, `.cs`). With the app running:
+
+```bash
+python3 scripts/import_answers.py past-answers --dry-run      # list what would be sent
+python3 scripts/import_answers.py past-answers --permission   # import, then label at /label.html
+```
+
+Names and emails are removed from what the server stores, and answers get generated IDs (P001, P002, ...). Check comments and strings for names yourself. Use `--permission` only when you may use the answers for research.
+
 Answers from all languages go to the same files and each answer remembers its language. Everything under `study-data/` holds student work and is git-ignored.
 
 ## Pilot run
