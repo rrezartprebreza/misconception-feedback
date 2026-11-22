@@ -34,6 +34,13 @@ import java.util.Map;
 public class LanguageConfig {
 
     @Bean
+    ModelLabel modelLabel(@Value("${study.model-label:auto}") String configured,
+                          @Value("${spring.ai.openai.chat.options.model:}") String openAiModel,
+                          @Value("${spring.ai.ollama.chat.options.model:}") String ollamaModel) {
+        return ModelLabel.resolve(configured, ModelLabel.openAiOnClasspath(), openAiModel, ollamaModel);
+    }
+
+    @Bean
     LanguageRegistry languageRegistry(ObjectMapper mapper,
                                       LlmClient llm,
                                       Anonymiser anonymiser,
@@ -42,7 +49,7 @@ public class LanguageConfig {
                                       @Value("${study.detector.threshold:0.6}") double threshold,
                                       @Value("${study.tasks-file:}") String tasksFile,
                                       @Value("${study.log-file:study-data/submissions.jsonl}") String logFile,
-                                      @Value("${study.model-label:unspecified}") String modelLabel) {
+                                      ModelLabel modelLabel) {
         Map<ProgrammingLanguage, LanguageContext> contexts = new EnumMap<>(ProgrammingLanguage.class);
         for (ProgrammingLanguage language : ProgrammingLanguage.values()) {
             MisconceptionCatalogue catalogue = MisconceptionCatalogue.fromClasspath(mapper, language.catalogueResource());
@@ -56,7 +63,7 @@ public class LanguageConfig {
                     : StudyTasks.fromClasspath(mapper, language.tasksResource());
 
             StudyLog log = new JsonlStudyLog(Path.of(LanguageFiles.withLanguage(logFile, language)), mapper);
-            StudyService study = new StudyService(feedback, tasks, log, anonymiser, Clock.systemUTC(), modelLabel);
+            StudyService study = new StudyService(feedback, tasks, log, anonymiser, Clock.systemUTC(), modelLabel.value());
             CollectionService collection = new CollectionService(answers, tasks, catalogue, anonymiser, language, Clock.systemUTC());
 
             contexts.put(language, new LanguageContext(language, catalogue, tasks, prompts, feedback, study, collection));

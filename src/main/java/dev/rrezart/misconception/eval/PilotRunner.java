@@ -2,6 +2,7 @@ package dev.rrezart.misconception.eval;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.rrezart.misconception.config.ModelLabel;
 import dev.rrezart.misconception.language.LanguageContext;
 import dev.rrezart.misconception.language.LanguageRegistry;
 import dev.rrezart.misconception.model.ProgrammingLanguage;
@@ -37,13 +38,13 @@ public class PilotRunner implements CommandLineRunner {
     public PilotRunner(LanguageRegistry registry,
                        ObjectMapper mapper,
                        @Value("${study.pilot.gold-file:}") String goldFile,
-                       @Value("${study.model-label:unspecified}") String modelLabel,
+                       ModelLabel modelLabel,
                        @Value("${study.pilot.results-dir:study-data/results}") String resultsDir) {
         this.context = registry.defaultContext();
         this.mapper = mapper;
         this.language = context.language();
         this.goldFile = goldFile;
-        this.modelLabel = modelLabel;
+        this.modelLabel = modelLabel.value();
         this.resultsDir = resultsDir;
     }
 

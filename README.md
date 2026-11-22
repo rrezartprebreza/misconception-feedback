@@ -115,7 +115,7 @@ What the server does behind the page:
 - **Logging.** Every submission is appended to `study-data/submissions-<language>.jsonl` (ignored by git): timestamp, participant ID, exercise, topic, attempt, condition, model label, anonymised code and explanation, feedback and detector matches. Attempt numbers continue after a restart. Compare attempt 1 with the last attempt to see whether the misconception was corrected.
 - **Consent.** The consent text in `study.html` is a placeholder. Replace it with the text approved by your ethics committee before any student uses the page. The server refuses submissions without the consent flag.
 
-Set your own exercises with `study.tasks-file=study-data/tasks-{language}.json` (one file per language; same format as `src/main/resources/study/tasks-java.json`; every exercise has topic 1 or 2). Without `{language}` in the name, the file applies to the default language only and the other languages keep the bundled exercises. Set `STUDY_MODEL_LABEL` when you use a hosted model so the log records which one.
+Set your own exercises with `study.tasks-file=study-data/tasks-{language}.json` (one file per language; same format as `src/main/resources/study/tasks-java.json`; every exercise has topic 1 or 2). Without `{language}` in the name, the file applies to the default language only and the other languages keep the bundled exercises.
 
 Participant IDs must be assigned by you, not chosen by students: letters, digits, `-` and `_` only, up to 20 characters. Do not use names.
 
@@ -163,12 +163,23 @@ STUDY_LANGUAGE=csharp mvn spring-boot:run -Dspring-boot.run.profiles=pilot -Dspr
 
 The pilot evaluates the default language, so set `STUDY_LANGUAGE` to the language of the gold file.
 
+### Hosted models
+
+The tool talks to any OpenAI-compatible service, so you can compare models without installing anything. Build with `-Popenai` and set the address, key and model in `.env` (see `.env.example`). Groq's production models at the time of writing are `openai/gpt-oss-20b`, `openai/gpt-oss-120b`, `llama-3.3-70b-versatile` and `llama-3.1-8b-instant`; check the provider's list before you start. To run the pilot for several models and languages in one go:
+
+```bash
+scripts/run_pilots.sh java csharp          # needs study-data/gold-java.json and study-data/gold-csharp.json
+MODELS="openai/gpt-oss-20b llama-3.3-70b-versatile" scripts/run_pilots.sh java   # your own list
+```
+
+The script turns the automatic fallback off, so every result file comes from exactly one model.
+
 Every pilot run is also saved, so nothing has to be copied from the screen. In `study-data/results/` you get two files named `<language>-<model>-<time>`:
 
 - `.json`: micro precision, recall and F1, Cohen's kappa and precision, recall, F1 and counts (true positives, false positives, false negatives) per misconception, and for every answer the instructor's labels, the detector's labels and the evidence it quoted. Only answer ids are written, never student code.
 - `.txt`: the same summary as on screen, plus the answers where detector and instructor disagree, for your error analysis.
 
-The model name in the file comes from `OPENAI_MODEL`, `OLLAMA_MODEL` or `STUDY_MODEL_LABEL`. Change the folder with `study.pilot.results-dir`. To compare models, run the pilot once per model and keep each pair of files.
+The model name in the file is the model the app called: `OPENAI_MODEL` when built with `-Popenai`, `OLLAMA_MODEL` otherwise, or `STUDY_MODEL_LABEL` if you set it. Change the folder with `study.pilot.results-dir`. To compare models, run the pilot once per model and keep each pair of files.
 
 ## Status
 
