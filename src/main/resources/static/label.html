@@ -29,7 +29,7 @@
 <body>
   <div class="topbar">
     <h1>Label answers</h1>
-    <span class="chip" id="language">Java</span>
+    <span class="chip" id="language"></span>
   </div>
 
   <main class="narrow setup" id="setup">
@@ -84,7 +84,11 @@
     <section aria-label="Export and agreement" class="feedback-col">
       <div class="panel">
         <h2>Export</h2>
-        <p class="hint">Downloads your labelled answers in the format the evaluation reads. Save it as <code>study-data/gold.json</code>.</p>
+        <div class="field" style="margin-top:0">
+          <label for="exportLanguage">Language</label>
+          <select id="exportLanguage"></select>
+        </div>
+        <p class="hint">Downloads your labelled answers for that language in the format the evaluation reads. Save the file as <code>study-data/gold.json</code> before you run the pilot for that language.</p>
         <div class="actions"><button class="btn" id="export" type="button">Download labelled set</button></div>
       </div>
       <div class="panel" style="margin-top:1rem">
@@ -101,12 +105,12 @@
   <script src="/app.js"></script>
   <script>
     var token = '', labeller = '';
-    var answers = [], catalogue = [], index = 0;
+    var answers = [], catalogues = {}, shownLanguage = null, index = 0;
     var code = document.getElementById('code');
     var errorBox = document.getElementById('error');
 
     attachEditor(code, document.getElementById('gutter'));
-    applyLanguage();
+    applyLanguage().then(function () { setChip(); });
 
     function el(tag, cls, text) {
       var e = document.createElement(tag);
@@ -126,10 +130,21 @@
       });
     }
 
-    function buildChoices() {
+    function languageName(id) {
+      var found = languageOptions.filter(function (l) { return l.id === id; })[0];
+      return found ? found.name : id;
+    }
+
+    function setChip() {
+      var chip = document.getElementById('language');
+      if (chip) { chip.textContent = shownLanguage ? languageName(shownLanguage) : ''; }
+    }
+
+    // The choices list follows the language of the answer on screen, because each language has its own wording.
+    function buildChoices(languageId) {
       var box = document.getElementById('choices');
       box.querySelectorAll('.choice').forEach(function (c) { c.remove(); });
-      catalogue.forEach(function (m) {
+      (catalogues[languageId] || []).forEach(function (m) {
         var label = el('label', 'choice');
         var input = document.createElement('input');
         input.type = 'checkbox';
@@ -178,6 +193,11 @@
     function show() {
       errorBox.textContent = '';
       var a = answers[index];
+      if (a.language !== shownLanguage) {
+        shownLanguage = a.language;
+        buildChoices(shownLanguage);
+        setChip();
+      }
       document.getElementById('task').textContent = a.task;
       code.value = a.code;
       code.dispatchEvent(new Event('input'));
@@ -197,18 +217,39 @@
       if (!/^[A-Za-z0-9_-]{1,20}$/.test(labeller)) { err.textContent = 'Use 1 to 20 letters, digits, - or _ for your name.'; return; }
       Promise.all([
         api('/api/collect/admin/answers?labeller=' + encodeURIComponent(labeller)),
-        fetch('/api/catalogue').then(function (r) { return r.json(); })
+        Promise.all(languageOptions.map(function (l) {
+          return fetch('/api/catalogue?language=' + encodeURIComponent(l.id))
+            .then(function (r) { return r.json(); })
+            .then(function (items) { catalogues[l.id] = items; });
+        }))
       ]).then(function (results) {
         answers = results[0];
-        catalogue = results[1];
         if (!answers.length) { err.textContent = 'No answers have been collected yet. Share the collect page with your students first.'; return; }
-        buildChoices();
+        fillLanguageChoices();
         index = Math.max(0, answers.findIndex(function (a) { return a.labels === null; }));
         document.getElementById('setup').hidden = true;
         document.getElementById('work').hidden = false;
         show();
       }).catch(function (e) { err.textContent = e.message; });
     }
+
+    // Export and agreement are per language, so the person picks which language's labelled set they want.
+    function fillLanguageChoices() {
+      var used = {};
+      answers.forEach(function (a) { used[a.language] = (used[a.language] || 0) + 1; });
+      var select = document.getElementById('exportLanguage');
+      select.textContent = '';
+      languageOptions.forEach(function (l) {
+        var o = document.createElement('option');
+        o.value = l.id;
+        o.textContent = l.name + (used[l.id] ? ' (' + used[l.id] + ' answers)' : ' (no answers)');
+        select.appendChild(o);
+      });
+      var first = languageOptions.filter(function (l) { return used[l.id]; })[0];
+      if (first) { select.value = first.id; }
+    }
+
+    function exportLanguage() { return document.getElementById('exportLanguage').value; }
 
     function save() {
       errorBox.textContent = '';
@@ -231,11 +272,11 @@
     }
 
     function download() {
-      api('/api/collect/admin/export?labeller=' + encodeURIComponent(labeller)).then(function (items) {
+      api('/api/collect/admin/export?labeller=' + encodeURIComponent(labeller) + '&language=' + encodeURIComponent(exportLanguage())).then(function (items) {
         var blob = new Blob([JSON.stringify(items, null, 2)], { type: 'application/json' });
         var link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = 'gold.json';
+        link.download = 'gold-' + exportLanguage() + '.json';
         link.click();
         URL.revokeObjectURL(link.href);
       }).catch(function (e) { errorBox.textContent = e.message; });
@@ -246,7 +287,7 @@
       var out = document.getElementById('agreement');
       out.textContent = '';
       if (!other) { return; }
-      api('/api/collect/admin/agreement?a=' + encodeURIComponent(labeller) + '&b=' + encodeURIComponent(other)).then(function (r) {
+      api('/api/collect/admin/agreement?a=' + encodeURIComponent(labeller) + '&b=' + encodeURIComponent(other) + '&language=' + encodeURIComponent(exportLanguage())).then(function (r) {
         if (!r.items) { out.appendChild(el('p', 'hint', 'No answers have been labelled by both of you yet.')); return; }
         out.appendChild(el('p', null, r.items + ' answers labelled by both. Overall F1 ' + r.micro.f1.toFixed(2) + '.'));
         var table = el('table', 'report');

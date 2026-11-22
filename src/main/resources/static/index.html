@@ -78,12 +78,13 @@
     var list = document.getElementById('exercises');
 
     attachEditor(code, document.getElementById('gutter'));
-    applyLanguage();
-
-    fetch('/api/catalogue')
-      .then(function (r) { return r.ok ? r.json() : []; })
-      .then(function (items) { items.forEach(function (m) { catalogue[m.id] = m; }); })
-      .catch(function () {});
+    function loadCatalogue() {
+      catalogue = {};
+      return fetch(withLanguage('/api/catalogue'))
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (items) { items.forEach(function (m) { catalogue[m.id] = m; }); })
+        .catch(function () {});
+    }
 
     function renderRail() {
       list.textContent = '';
@@ -113,10 +114,22 @@
       if (own) { customTask.focus(); }
     }
 
-    fetch('/api/study/tasks')
-      .then(function (r) { return r.ok ? r.json() : []; })
-      .then(function (items) { tasks = items; choose(items.length ? items[0] : null); })
-      .catch(function () { choose(null); });
+    function loadTasks() {
+      return fetch(withLanguage('/api/study/tasks'))
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (items) { tasks = items; choose(items.length ? items[0] : null); })
+        .catch(function () { tasks = []; choose(null); });
+    }
+
+    function loadLanguageData() { return Promise.all([loadCatalogue(), loadTasks()]); }
+
+    // The drop-down switches language without a reload. The old result belongs to the old language, so clear it.
+    applyLanguage(true, function () {
+      out.textContent = '';
+      out.appendChild(el('p', 'empty', 'No feedback yet.'));
+      error.textContent = '';
+      loadLanguageData();
+    }).then(loadLanguageData);
 
     function currentTask() { return selected ? selected.text : customTask.value; }
 
@@ -188,6 +201,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          language: pageLanguage ? pageLanguage.id : null,
           id: 'web',
           task: currentTask(),
           code: code.value,

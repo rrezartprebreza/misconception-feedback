@@ -1,9 +1,11 @@
 package dev.rrezart.misconception.web;
 
+import dev.rrezart.misconception.collect.AnswerStore;
 import dev.rrezart.misconception.collect.CollectedAnswer;
-import dev.rrezart.misconception.collect.CollectionService;
 import dev.rrezart.misconception.eval.GoldItem;
 import dev.rrezart.misconception.eval.PilotEvaluator;
+import dev.rrezart.misconception.language.LanguageContext;
+import dev.rrezart.misconception.language.LanguageRegistry;
 import dev.rrezart.misconception.study.UnknownTaskException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -30,11 +32,14 @@ import java.util.Map;
 @RequestMapping("/api/collect")
 public class CollectController {
 
-    private final CollectionService service;
+    private final LanguageRegistry registry;
+    private final AnswerStore store;
     private final String adminToken;
 
-    public CollectController(CollectionService service, @Value("${collect.admin-token:}") String adminToken) {
-        this.service = service;
+    public CollectController(LanguageRegistry registry, AnswerStore store,
+                             @Value("${collect.admin-token:}") String adminToken) {
+        this.registry = registry;
+        this.store = store;
         this.adminToken = adminToken == null ? "" : adminToken;
     }
 
@@ -43,8 +48,9 @@ public class CollectController {
         if (!request.consent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "consent is required");
         }
+        LanguageContext context = Languages.resolve(registry, request.language());
         try {
-            service.submit(request.participantId(), request.taskId(), request.code(), request.explanation());
+            context.collection().submit(request.participantId(), request.taskId(), request.code(), request.explanation());
             return Map.of("received", true);
         } catch (UnknownTaskException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
@@ -57,7 +63,7 @@ public class CollectController {
     public List<AdminAnswerView> answers(@RequestHeader(value = "X-Admin-Token", required = false) String token,
                                          @RequestParam String labeller) {
         requireAdmin(token);
-        return service.store().all().stream()
+        return store.all().stream()
                 .map(a -> view(a, labeller))
                 .toList();
     }
@@ -67,7 +73,10 @@ public class CollectController {
                                      @RequestBody LabelRequest request) {
         requireAdmin(token);
         try {
-            service.label(request.labeller(), request.answerId(), request.labels());
+            CollectedAnswer answer = store.find(request.answerId())
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown answer: " + request.answerId()));
+            Languages.resolve(registry, answer.language()).collection()
+                    .label(request.labeller(), request.answerId(), request.labels());
             return Map.of("saved", true);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
@@ -76,21 +85,23 @@ public class CollectController {
 
     @GetMapping("/admin/export")
     public List<GoldItem> export(@RequestHeader(value = "X-Admin-Token", required = false) String token,
-                                 @RequestParam String labeller) {
+                                 @RequestParam String labeller,
+                                 @RequestParam(required = false) String language) {
         requireAdmin(token);
-        return service.exportGold(labeller);
+        return Languages.resolve(registry, language).collection().exportGold(labeller);
     }
 
     @GetMapping("/admin/agreement")
     public PilotEvaluator.Report agreement(@RequestHeader(value = "X-Admin-Token", required = false) String token,
                                            @RequestParam String a,
-                                           @RequestParam String b) {
+                                           @RequestParam String b,
+                                           @RequestParam(required = false) String language) {
         requireAdmin(token);
-        return service.agreement(a, b);
+        return Languages.resolve(registry, language).collection().agreement(a, b);
     }
 
     private AdminAnswerView view(CollectedAnswer a, String labeller) {
-        List<String> labels = service.store().labelsOf(labeller, a.id()).orElse(null);
+        List<String> labels = store.labelsOf(labeller, a.id()).orElse(null);
         return new AdminAnswerView(a.id(), a.taskId(), a.task(), a.language(), a.code(), a.explanation(), labels);
     }
 

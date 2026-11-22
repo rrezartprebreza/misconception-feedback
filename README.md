@@ -23,13 +23,15 @@ Both conditions use the same model and settings. The generic condition never cal
 
 ## Languages
 
-Java, Python and C# are supported. Pick one with `STUDY_LANGUAGE` (`java` by default, or `python`, `csharp`):
+Java, Python and C# are supported, and one running instance serves all three. On the main page, use the language menu at the top right. The other pages take a link: `/study.html?lang=python`, `/collect.html?lang=csharp`. The labelling page shows each answer with the wording of its own language.
+
+`STUDY_LANGUAGE` (`java` by default, or `python`, `csharp`) only sets the language used when a page or request does not name one, and the language the pilot runner evaluates:
 
 ```bash
-STUDY_LANGUAGE=python mvn spring-boot:run
+STUDY_LANGUAGE=csharp mvn spring-boot:run
 ```
 
-Each language has its own files: `catalogue-<language>.json`, `study/tasks-<language>.json` and `pilot/synthetic-gold-<language>.json`. The misconception ids (M01 to M08) and the exercise ids are the same in all three, so results can be compared across languages. The Python and C# entries were adapted from the Java ones by an AI assistant and have not been checked by instructors. Run one language per study and report which one.
+Each language has its own files: `catalogue-<language>.json`, `study/tasks-<language>.json` and `pilot/synthetic-gold-<language>.json`. The misconception ids (M01 to M08) and the exercise ids are the same in all three, so results can be compared across languages. The Python and C# entries were adapted from the Java ones by an AI assistant and have not been checked by instructors. Report which language each result is for. The study log is kept per language (`study-data/submissions-java.jsonl`, `-python`, `-csharp`), so the languages never mix.
 
 ## Run
 
@@ -110,10 +112,10 @@ What the server does behind the page:
 
 - **Assignment.** Condition is decided by participant ID and exercise topic (a counterbalanced crossover). IDs ending in an odd digit (P01, P03...) get generic feedback on topic 1 and misconception-aware feedback on topic 2; even digits (P02, P04...) get the reverse. P01 to P72 splits exactly 36 and 36.
 - **Blinding.** Participants never see their condition or the detector output. They only get the feedback text and the attempt number.
-- **Logging.** Every submission is appended to `study-data/submissions.jsonl` (ignored by git): timestamp, participant ID, exercise, topic, attempt, condition, model label, anonymised code and explanation, feedback and detector matches. Attempt numbers continue after a restart. Compare attempt 1 with the last attempt to see whether the misconception was corrected.
+- **Logging.** Every submission is appended to `study-data/submissions-<language>.jsonl` (ignored by git): timestamp, participant ID, exercise, topic, attempt, condition, model label, anonymised code and explanation, feedback and detector matches. Attempt numbers continue after a restart. Compare attempt 1 with the last attempt to see whether the misconception was corrected.
 - **Consent.** The consent text in `study.html` is a placeholder. Replace it with the text approved by your ethics committee before any student uses the page. The server refuses submissions without the consent flag.
 
-Set your own exercises with `study.tasks-file=study-data/tasks.json` (same format as `src/main/resources/study/tasks-java.json`; every exercise has topic 1 or 2). Set `STUDY_MODEL_LABEL` when you use a hosted model so the log records which one.
+Set your own exercises with `study.tasks-file=study-data/tasks-{language}.json` (one file per language; same format as `src/main/resources/study/tasks-java.json`; every exercise has topic 1 or 2). Without `{language}` in the name, the file applies to the default language only and the other languages keep the bundled exercises. Set `STUDY_MODEL_LABEL` when you use a hosted model so the log records which one.
 
 Participant IDs must be assigned by you, not chosen by students: letters, digits, `-` and `_` only, up to 20 characters. Do not use names.
 
@@ -122,13 +124,13 @@ Participant IDs must be assigned by you, not chosen by students: letters, digits
 Use this to build the labelled set for the detector evaluation. No model is called and students see no feedback.
 
 1. Set an instructor token in `.env`: `COLLECT_ADMIN_TOKEN=choose-a-long-secret`. The instructor pages stay switched off without it.
-2. Start the app (`STUDY_LANGUAGE=java` or `csharp`) and share `http://<your-address>:8080/collect.html` with students, with the participant IDs you hand out. Replace the consent text in `collect.html` with the text approved by your ethics committee first.
+2. Start the app and share `http://<your-address>:8080/collect.html?lang=java` (or `python`, `csharp`) with students, with the participant IDs you hand out. Replace the consent text in `collect.html` with the text approved by your ethics committee first.
 3. Answers are anonymised (emails and `@author` lines) and saved to `study-data/answers.jsonl`.
 4. Open `/label.html`, enter the token and your labeller name, and tick the misconceptions each answer shows. The participant ID is hidden from you. Labels are saved to `study-data/labels.jsonl` and can be changed later.
-5. Press **Download labelled set** and save it as `study-data/gold.json`. A second labeller can label some answers under another name; **Compare** shows Cohen's kappa between the two of you.
+5. Choose a language, press **Download labelled set** and save it as `study-data/gold.json` (one file per language; the export holds that language only). A second labeller can label some answers under another name; **Compare** shows Cohen's kappa between the two of you.
 6. Run the evaluation on it (see Pilot run below).
 
-Run one language per instance. Everything under `study-data/` holds student work and is git-ignored.
+Answers from all languages go to the same files and each answer remembers its language. Everything under `study-data/` holds student work and is git-ignored.
 
 ## Pilot run
 
@@ -145,8 +147,10 @@ Small local models sometimes return JSON the detector cannot parse. If the pilot
 The bundled set (`src/main/resources/pilot/synthetic-gold-<language>.json`) was written and labelled by an AI assistant, not by instructors. Use it only to check that the pipeline works and to compare models. Do not report its numbers as study results. For the real RQ1 evaluation, point the runner at an instructor-labelled file in the same format (anonymised, kept outside git):
 
 ```bash
-mvn spring-boot:run -Dspring-boot.run.profiles=pilot -Dspring-boot.run.arguments=--study.pilot.gold-file=study-data/gold.json
+STUDY_LANGUAGE=csharp mvn spring-boot:run -Dspring-boot.run.profiles=pilot -Dspring-boot.run.arguments=--study.pilot.gold-file=study-data/gold.json
 ```
+
+The pilot evaluates the default language, so set `STUDY_LANGUAGE` to the language of the gold file.
 
 To compare models, run the pilot once per model (set `OLLAMA_MODEL` or `OPENAI_MODEL`) and record the scores.
 

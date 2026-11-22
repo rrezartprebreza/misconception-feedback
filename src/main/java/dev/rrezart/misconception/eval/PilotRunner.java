@@ -2,8 +2,8 @@ package dev.rrezart.misconception.eval;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.rrezart.misconception.catalogue.MisconceptionCatalogue;
-import dev.rrezart.misconception.feedback.FeedbackService;
+import dev.rrezart.misconception.language.LanguageContext;
+import dev.rrezart.misconception.language.LanguageRegistry;
 import dev.rrezart.misconception.model.ProgrammingLanguage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -25,21 +25,17 @@ import java.util.List;
 @Profile("pilot")
 public class PilotRunner implements CommandLineRunner {
 
-    private final FeedbackService service;
-    private final MisconceptionCatalogue catalogue;
+    private final LanguageContext context;
     private final ObjectMapper mapper;
     private final ProgrammingLanguage language;
     private final String goldFile;
 
-    public PilotRunner(FeedbackService service,
-                       MisconceptionCatalogue catalogue,
+    public PilotRunner(LanguageRegistry registry,
                        ObjectMapper mapper,
-                       ProgrammingLanguage language,
                        @Value("${study.pilot.gold-file:}") String goldFile) {
-        this.service = service;
-        this.catalogue = catalogue;
+        this.context = registry.defaultContext();
         this.mapper = mapper;
-        this.language = language;
+        this.language = context.language();
         this.goldFile = goldFile;
     }
 
@@ -47,7 +43,7 @@ public class PilotRunner implements CommandLineRunner {
     public void run(String... args) throws IOException {
         List<GoldItem> items = load();
         System.out.println("Running detector on " + items.size() + " items...");
-        PilotEvaluator.Report report = PilotEvaluator.evaluate(items, service::detectOnly, catalogue);
+        PilotEvaluator.Report report = PilotEvaluator.evaluate(items, context.feedback()::detectOnly, context.catalogue());
         System.out.println(PilotEvaluator.format(report));
     }
 

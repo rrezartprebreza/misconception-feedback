@@ -117,4 +117,18 @@ class CollectionServiceTest {
         assertThat(reopened.labelsOf("ana", "A0001")).contains(List.of("M03"));
         assertThat(again.submit("P02", "binary-search", "b", null).id()).isEqualTo("A0002");
     }
+
+    @Test
+    void exportOnlyIncludesAnswersInTheServicesLanguage() {
+        CollectionService python = new CollectionService(store, StudyTasks.fromClasspath(mapper, "/study/tasks-python.json"),
+                MisconceptionCatalogue.fromClasspath(mapper, "/catalogue-python.json"), new Anonymiser(),
+                ProgrammingLanguage.PYTHON, clock);
+        service.submit("P01", "binary-search", "java code", null);
+        python.submit("P02", "binary-search", "python code", null);
+        service.label("ana", "A0001", List.of("M03"));
+        service.label("ana", "A0002", List.of("M03"));
+
+        assertThat(service.exportGold("ana")).extracting(GoldItem::code).containsExactly("java code");
+        assertThat(python.exportGold("ana")).extracting(GoldItem::code).containsExactly("python code");
+    }
 }

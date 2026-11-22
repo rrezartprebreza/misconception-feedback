@@ -69,10 +69,13 @@ public class CollectionService {
         store.setLabels(labeller, answerId, new ArrayList<>(unique), clock.instant().toString());
     }
 
-    /** Only answers this labeller has labelled, in the format the pilot runner reads. */
+    /** Only answers in this service's language that this labeller has labelled, in the format the pilot runner reads. */
     public List<GoldItem> exportGold(String labeller) {
         List<GoldItem> items = new ArrayList<>();
         for (CollectedAnswer answer : store.all()) {
+            if (!language.id().equals(answer.language())) {
+                continue;
+            }
             store.labelsOf(labeller, answer.id()).ifPresent(labels ->
                     items.add(new GoldItem(answer.id(), answer.task(), answer.code(), answer.explanation(), labels)));
         }
