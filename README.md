@@ -54,6 +54,21 @@ curl -X POST localhost:8080/api/feedback -H 'Content-Type: application/json' -d 
 
 With the app running, open http://localhost:8080 . Paste a task, your Java code and an explanation, choose a feedback type and press the button. The page shows the feedback and, for the misconception-aware type, the misconception found with its corrective idea. It uses `POST /api/feedback` and `GET /api/catalogue`. The page is a first version: no accounts, no history.
 
+## Study mode
+
+For the classroom study, send participants to `http://<your-address>:8080/study.html`. The page walks them through consent, a participant ID, an exercise and feedback, and lets them resubmit.
+
+What the server does behind the page:
+
+- **Assignment.** Condition is decided by participant ID and exercise topic (a counterbalanced crossover). IDs ending in an odd digit (P01, P03...) get generic feedback on topic 1 and misconception-aware feedback on topic 2; even digits (P02, P04...) get the reverse. P01 to P72 splits exactly 36 and 36.
+- **Blinding.** Participants never see their condition or the detector output. They only get the feedback text and the attempt number.
+- **Logging.** Every submission is appended to `study-data/submissions.jsonl` (ignored by git): timestamp, participant ID, exercise, topic, attempt, condition, model label, anonymised code and explanation, feedback and detector matches. Attempt numbers continue after a restart. Compare attempt 1 with the last attempt to see whether the misconception was corrected.
+- **Consent.** The consent text in `study.html` is a placeholder. Replace it with the text approved by your ethics committee before any student uses the page. The server refuses submissions without the consent flag.
+
+Set your own exercises with `study.tasks-file=study-data/tasks.json` (same format as `src/main/resources/study/tasks.json`; every exercise has topic 1 or 2). Set `STUDY_MODEL_LABEL` when you use a hosted model so the log records which one.
+
+Participant IDs must be assigned by you, not chosen by students: letters, digits, `-` and `_` only, up to 20 characters. Do not use names.
+
 ## Pilot run
 
 Smoke-test the detector before touching real student data. This sends 12 synthetic submissions through the detector and prints precision, recall, F1 and kappa:

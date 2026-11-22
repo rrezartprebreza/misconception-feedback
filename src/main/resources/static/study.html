@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Programming practice study</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #1a1a1a; }
+    h1 { font-size: 1.4rem; }
+    label { display: block; font-weight: 600; margin: 1rem 0 .25rem; }
+    textarea, select, input[type=text] { width: 100%; box-sizing: border-box; font: inherit; padding: .5rem; border: 1px solid #bbb; border-radius: 6px; }
+    textarea.code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .9rem; }
+    button { margin-top: 1rem; padding: .6rem 1.2rem; font: inherit; border: 0; border-radius: 6px; background: #2457c5; color: #fff; cursor: pointer; }
+    button:disabled { background: #8a9bc4; cursor: wait; }
+    .card { border: 1px solid #d5d5d5; border-radius: 8px; padding: .75rem 1rem; margin-top: 1rem; }
+    .consent { background: #f6f6f6; }
+    .task { white-space: pre-wrap; background: #f6f8fc; }
+    .error { color: #a40000; }
+    .note { font-size: .85rem; color: #666; }
+    .row { display: flex; align-items: center; gap: .5rem; margin-top: .75rem; }
+    .row input { width: auto; }
+    pre.feedback { white-space: pre-wrap; font-family: inherit; margin: 0; }
+    [hidden] { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Programming practice study</h1>
+
+  <section id="step1">
+    <div class="card consent">
+      <strong>Information and consent</strong>
+      <p>
+        REPLACE THIS TEXT WITH THE CONSENT TEXT APPROVED BY YOUR ETHICS COMMITTEE.
+        It should say who runs the study, what data is collected (your code, explanations and the
+        feedback you receive), that an AI model generates the feedback, how data is stored and for how long,
+        that taking part is voluntary and does not affect your grade, and who to contact.
+      </p>
+      <div class="row">
+        <input type="checkbox" id="consent">
+        <label for="consent" style="margin:0;font-weight:400">I have read this and agree to take part.</label>
+      </div>
+    </div>
+
+    <label for="pid">Participant ID (given to you by your instructor, not your name)</label>
+    <input type="text" id="pid" maxlength="20" autocomplete="off" placeholder="For example: P01">
+
+    <button id="start" type="button">Start</button>
+    <p id="step1error" class="error" role="alert"></p>
+  </section>
+
+  <section id="step2" hidden>
+    <label for="task">Exercise</label>
+    <select id="task"></select>
+    <div id="taskText" class="card task"></div>
+
+    <label for="code">Your Java code</label>
+    <textarea id="code" class="code" rows="10" spellcheck="false"></textarea>
+
+    <label for="explanation">Your explanation</label>
+    <textarea id="explanation" rows="3"></textarea>
+
+    <button id="send" type="button">Get feedback</button>
+    <p id="step2error" class="error" role="alert"></p>
+
+    <div id="out" aria-live="polite"></div>
+    <p class="note">The feedback is written by an AI model and may contain mistakes. After you read it, you can improve your answer and submit it again.</p>
+  </section>
+
+  <script>
+    var tasks = [];
+    var participantId = '';
+    var step1 = document.getElementById('step1');
+    var step2 = document.getElementById('step2');
+    var taskSelect = document.getElementById('task');
+    var taskText = document.getElementById('taskText');
+    var sendButton = document.getElementById('send');
+    var out = document.getElementById('out');
+
+    function showTask() {
+      var chosen = tasks.filter(function (t) { return t.id === taskSelect.value; })[0];
+      taskText.textContent = chosen ? chosen.text : '';
+      out.textContent = '';
+    }
+
+    document.getElementById('start').addEventListener('click', function () {
+      var error = document.getElementById('step1error');
+      var id = document.getElementById('pid').value.trim();
+      error.textContent = '';
+      if (!document.getElementById('consent').checked) { error.textContent = 'You need to agree to take part to continue.'; return; }
+      if (!/^[A-Za-z0-9_-]{1,20}$/.test(id)) { error.textContent = 'Use the ID your instructor gave you: letters, digits, - or _ only.'; return; }
+
+      fetch('/api/study/tasks')
+        .then(function (r) { if (!r.ok) { throw new Error('Could not load the exercises.'); } return r.json(); })
+        .then(function (list) {
+          tasks = list;
+          participantId = id;
+          taskSelect.textContent = '';
+          list.forEach(function (t) {
+            var option = document.createElement('option');
+            option.value = t.id;
+            option.textContent = t.title;
+            taskSelect.appendChild(option);
+          });
+          showTask();
+          step1.hidden = true;
+          step2.hidden = false;
+        })
+        .catch(function (e) { error.textContent = e.message; });
+    });
+
+    taskSelect.addEventListener('change', showTask);
+
+    sendButton.addEventListener('click', function () {
+      var error = document.getElementById('step2error');
+      var code = document.getElementById('code').value;
+      error.textContent = '';
+      if (!code.trim()) { error.textContent = 'Please write some code first.'; return; }
+
+      sendButton.disabled = true;
+      out.textContent = 'Working...';
+
+      fetch('/api/study/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          participantId: participantId,
+          taskId: taskSelect.value,
+          code: code,
+          explanation: document.getElementById('explanation').value,
+          consent: true
+        })
+      })
+        .then(function (r) {
+          if (!r.ok) { throw new Error('The server returned status ' + r.status + '. Please tell your instructor.'); }
+          return r.json();
+        })
+        .then(function (result) {
+          out.textContent = '';
+          var card = document.createElement('div');
+          card.className = 'card';
+          var title = document.createElement('strong');
+          title.textContent = 'Feedback (attempt ' + result.attempt + ')';
+          var pre = document.createElement('pre');
+          pre.className = 'feedback';
+          pre.textContent = result.feedback;
+          card.appendChild(title);
+          card.appendChild(pre);
+          out.appendChild(card);
+        })
+        .catch(function (e) { out.textContent = ''; error.textContent = e.message || 'Something went wrong.'; })
+        .finally(function () { sendButton.disabled = false; });
+    });
+  </script>
+</body>
+</html>

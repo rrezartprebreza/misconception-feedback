@@ -1,0 +1,26 @@
+[
+  {
+    "id": "list-insert",
+    "topic": 1,
+    "title": "Linked list: insert a node",
+    "text": "Write a Java method that inserts a new node with value v directly after a given node in a singly linked list. Then explain, in two or three sentences, what happens to the nodes that were already in the list."
+  },
+  {
+    "id": "remove-negatives",
+    "topic": 1,
+    "title": "Collections: remove negative numbers",
+    "text": "Write a Java method that removes all negative numbers from a List<Integer>. Explain how your loop avoids skipping elements or failing."
+  },
+  {
+    "id": "binary-search",
+    "topic": 2,
+    "title": "Searching: binary search",
+    "text": "Implement binary search on a sorted int array in Java. It returns the index of the key, or -1. Explain why your loop always terminates."
+  },
+  {
+    "id": "loop-complexity",
+    "topic": 2,
+    "title": "Complexity: running time",
+    "text": "State and justify the running time, as a function of n, of this method:\n\nint count(int n) {\n    int count = 0;\n    for (int i = 0; i < n; i++) {\n        for (int j = 1; j < n; j *= 2) {\n            count++;\n        }\n    }\n    return count;\n}\n\nWrite your answer as a short explanation. You may also write code if it helps."
+  }
+]
