@@ -57,4 +57,40 @@ class PilotEvaluatorTest {
         assertThat(report.micro().recall()).isZero();
         assertThat(PilotEvaluator.format(report)).contains("Items: 12");
     }
+
+    @Test
+    void detailedResultsKeepEachItemsPredictionAndPerMisconceptionCounts() {
+        List<GoldItem> items = List.of(
+                new GoldItem("a", "t", "c", "", List.of("M03")),
+                new GoldItem("b", "t", "c", "", List.of("M03", "M01")),
+                new GoldItem("c", "t", "c", "", List.of()));
+        PilotEvaluator.Detailed detailed = PilotEvaluator.evaluateDetailed(items, s -> switch (s.id()) {
+            case "a" -> List.of(new Match("M03", "lo = mid", 0.9));
+            case "b" -> List.of(new Match("M01", "x", 0.8));
+            default -> List.of(new Match("M03", "y", 0.7));
+        }, catalogue);
+
+        assertThat(detailed.items()).extracting(PilotEvaluator.ItemResult::predicted)
+                .containsExactly(List.of("M03"), List.of("M01"), List.of("M03"));
+        assertThat(detailed.items().get(1).gold()).containsExactly("M01", "M03");
+        PilotEvaluator.PerMisconception m03 = detailed.perMisconception().get("M03");
+        assertThat(m03.truePositives()).isEqualTo(1);
+        assertThat(m03.falsePositives()).isEqualTo(1);
+        assertThat(m03.falseNegatives()).isEqualTo(1);
+        assertThat(m03.f1()).isCloseTo(0.5, within(1e-9));
+        assertThat(PilotEvaluator.formatDetailed(detailed)).contains("b  instructor [M01, M03], detector [M01]");
+    }
+
+    @Test
+    void evaluateStillCallsTheDetectorOncePerItem() {
+        List<GoldItem> items = List.of(new GoldItem("a", "t", "c", "", List.of()), new GoldItem("b", "t", "c", "", List.of()));
+        int[] calls = {0};
+
+        PilotEvaluator.evaluate(items, s -> {
+            calls[0]++;
+            return List.of();
+        }, catalogue);
+
+        assertThat(calls[0]).isEqualTo(2);
+    }
 }

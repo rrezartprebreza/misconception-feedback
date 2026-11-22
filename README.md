@@ -163,7 +163,12 @@ STUDY_LANGUAGE=csharp mvn spring-boot:run -Dspring-boot.run.profiles=pilot -Dspr
 
 The pilot evaluates the default language, so set `STUDY_LANGUAGE` to the language of the gold file.
 
-To compare models, run the pilot once per model (set `OLLAMA_MODEL` or `OPENAI_MODEL`) and record the scores.
+Every pilot run is also saved, so nothing has to be copied from the screen. In `study-data/results/` you get two files named `<language>-<model>-<time>`:
+
+- `.json`: micro precision, recall and F1, Cohen's kappa and precision, recall, F1 and counts (true positives, false positives, false negatives) per misconception, and for every answer the instructor's labels, the detector's labels and the evidence it quoted. Only answer ids are written, never student code.
+- `.txt`: the same summary as on screen, plus the answers where detector and instructor disagree, for your error analysis.
+
+The model name in the file comes from `OPENAI_MODEL`, `OLLAMA_MODEL` or `STUDY_MODEL_LABEL`. Change the folder with `study.pilot.results-dir`. To compare models, run the pilot once per model and keep each pair of files.
 
 ## Status
 
