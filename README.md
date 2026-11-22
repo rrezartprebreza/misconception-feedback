@@ -111,3 +111,7 @@ Early scaffold. The catalogue is a starting list from common DSA teaching patter
 ## Ethics
 
 Get ethics approval and consent before using real student work. Check the model provider's data-retention terms, or use a local model.
+
+## Licence
+
+Free to use, change and share under the [MIT licence](LICENSE). Contributions are welcome, especially new misconceptions, exercises and languages, and instructor-labelled data (anonymised).

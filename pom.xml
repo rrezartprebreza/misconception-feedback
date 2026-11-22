@@ -16,6 +16,12 @@
     <version>0.1.0-SNAPSHOT</version>
     <name>misconception-feedback</name>
     <description>Misconception-aware LLM feedback for data structures and algorithms courses</description>
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+        </license>
+    </licenses>
 
     <properties>
         <java.version>21</java.version>
