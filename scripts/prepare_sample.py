@@ -2,6 +2,7 @@
 """Prepare a labelling set from collected answers: one attempt per student, random IDs, balanced sample.
 
 What it does, in order:
+  0. Drops test entries: any answer containing the text given by --exclude-text (default "SYNTHETIC QA").
   1. Keeps the first attempt per (participant, exercise, language); repeats are dropped.
   2. Replaces every participant ID with a random code (S001, S002, ...), so student numbers never
      reach the labelling page, the models or the paper. The private mapping goes to a separate file
@@ -32,9 +33,14 @@ def main():
     p.add_argument("--sample-tasks", nargs="*", default=[], help="exercise ids to down-sample (very common ones)")
     p.add_argument("--sample-per-language", type=int, default=25, help="how many answers to keep from the down-sampled exercises, per language")
     p.add_argument("--seed", type=int, default=2026)
+    p.add_argument("--exclude-text", default="SYNTHETIC QA", help="drop answers containing this text (test entries)")
     args = p.parse_args()
 
     rows = [json.loads(line) for line in args.answers.read_text(encoding="utf-8").splitlines() if line.strip()]
+    before = len(rows)
+    rows = [r for r in rows if not args.exclude_text or args.exclude_text not in json.dumps(r, ensure_ascii=False)]
+    if before != len(rows):
+        print(f"Dropped {before - len(rows)} test entries containing '{args.exclude_text}'.")
     rows.sort(key=lambda r: r.get("collectedAt", ""))
     seen, first = set(), []
     for r in rows:
