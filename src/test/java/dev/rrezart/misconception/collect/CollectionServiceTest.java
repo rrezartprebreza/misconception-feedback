@@ -131,4 +131,22 @@ class CollectionServiceTest {
         assertThat(service.exportGold("ana")).extracting(GoldItem::code).containsExactly("java code");
         assertThat(python.exportGold("ana")).extracting(GoldItem::code).containsExactly("python code");
     }
+
+    @Test
+    void withAnIdListOnlyListedIdsAreAcceptedAndStoredAsListed() {
+        CollectionService listed = new CollectionService(store, tasks, catalogue, new Anonymiser(), ProgrammingLanguage.JAVA,
+                clock, ParticipantIds.parse("S01..S03 guest"));
+
+        assertThat(listed.submit("s02", "binary-search", "code", null).participantId()).isEqualTo("S02");
+        assertThat(listed.submit("GUEST", "binary-search", "code", null).participantId()).isEqualTo("guest");
+        assertThatThrownBy(() -> listed.submit("ad74713", "binary-search", "code", null)).isInstanceOf(UnknownParticipantException.class);
+        assertThatThrownBy(() -> listed.checkParticipant("S04")).isInstanceOf(UnknownParticipantException.class);
+        assertThatThrownBy(() -> listed.checkParticipant("bad id!")).isInstanceOf(IllegalArgumentException.class);
+        assertThat(store.all()).hasSize(2);
+    }
+
+    @Test
+    void withoutAnIdListAnyValidIdIsAccepted() {
+        assertThat(service.checkParticipant("anything-1")).isEqualTo("anything-1");
+    }
 }

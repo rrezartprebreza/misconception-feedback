@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.rrezart.misconception.catalogue.MisconceptionCatalogue;
 import dev.rrezart.misconception.collect.AnswerStore;
 import dev.rrezart.misconception.collect.CollectionService;
+import dev.rrezart.misconception.collect.ParticipantIds;
 import dev.rrezart.misconception.detect.Detector;
 import dev.rrezart.misconception.detect.LlmDetector;
 import dev.rrezart.misconception.feedback.Anonymiser;
@@ -45,6 +46,7 @@ public class LanguageConfig {
                                       LlmClient llm,
                                       Anonymiser anonymiser,
                                       AnswerStore answers,
+                                      ParticipantIds participants,
                                       ProgrammingLanguage defaultLanguage,
                                       @Value("${study.detector.threshold:0.6}") double threshold,
                                       @Value("${study.tasks-file:}") String tasksFile,
@@ -64,7 +66,7 @@ public class LanguageConfig {
 
             StudyLog log = new JsonlStudyLog(Path.of(LanguageFiles.withLanguage(logFile, language)), mapper);
             StudyService study = new StudyService(feedback, tasks, log, anonymiser, Clock.systemUTC(), modelLabel.value());
-            CollectionService collection = new CollectionService(answers, tasks, catalogue, anonymiser, language, Clock.systemUTC());
+            CollectionService collection = new CollectionService(answers, tasks, catalogue, anonymiser, language, Clock.systemUTC(), participants);
 
             contexts.put(language, new LanguageContext(language, catalogue, tasks, prompts, feedback, study, collection));
         }

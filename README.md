@@ -130,6 +130,8 @@ Use this to build the labelled set for the detector evaluation. No model is call
 5. Choose a language, press **Download labelled set** and save it as `study-data/gold.json` (one file per language; the export holds that language only). A second labeller can label some answers under another name; **Compare** shows Cohen's kappa between the two of you.
 6. Run the evaluation on it (see Pilot run below).
 
+Give each student an ID from a list so that names, initials and student numbers never enter the data. Set `COLLECT_PARTICIPANT_IDS=S01..S60` in `.env` (ranges, commas and spaces are allowed) and restart. The collect page then rejects any other ID, and stores the ID as you wrote it in the list. Without it, any ID of 1 to 20 letters, digits, - or _ is accepted.
+
 ### Importing past answers
 
 If you already have student answers, you do not need students to use the page. Put each answer in a file inside a folder named after the exercise id (`list-insert`, `remove-negatives`, `binary-search`, `loop-complexity`). The extension sets the language (`.java`, `.py`, `.cs`). With the app running:

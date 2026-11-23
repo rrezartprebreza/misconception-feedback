@@ -31,9 +31,17 @@ public class CollectionService {
     private final Anonymiser anonymiser;
     private final ProgrammingLanguage language;
     private final Clock clock;
+    private final ParticipantIds participants;
 
     public CollectionService(AnswerStore store, StudyTasks tasks, MisconceptionCatalogue catalogue,
                              Anonymiser anonymiser, ProgrammingLanguage language, Clock clock) {
+        this(store, tasks, catalogue, anonymiser, language, clock, ParticipantIds.open());
+    }
+
+    public CollectionService(AnswerStore store, StudyTasks tasks, MisconceptionCatalogue catalogue,
+                             Anonymiser anonymiser, ProgrammingLanguage language, Clock clock,
+                             ParticipantIds participants) {
+        this.participants = participants;
         this.store = store;
         this.tasks = tasks;
         this.catalogue = catalogue;
@@ -42,10 +50,16 @@ public class CollectionService {
         this.clock = clock;
     }
 
-    public CollectedAnswer submit(String participantId, String taskId, String code, String explanation) {
+    /** Returns the ID as the instructor listed it. Throws when the ID is malformed or not on the list. */
+    public String checkParticipant(String participantId) {
         if (!StudyService.isValidParticipantId(participantId)) {
             throw new IllegalArgumentException("Participant id must be 1 to 20 letters, digits, - or _");
         }
+        return participants.canonical(participantId).orElseThrow(() -> new UnknownParticipantException(participantId));
+    }
+
+    public CollectedAnswer submit(String rawParticipantId, String taskId, String code, String explanation) {
+        String participantId = checkParticipant(rawParticipantId);
         StudyTask task = tasks.find(taskId).orElseThrow(() -> new UnknownTaskException(taskId));
         if (code == null || code.isBlank()) {
             throw new IllegalArgumentException("code is required");

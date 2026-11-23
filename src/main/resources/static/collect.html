@@ -101,7 +101,12 @@
       if (!document.getElementById('consent').checked) { error.textContent = 'Tick the box to agree to take part, then press Start.'; return; }
       if (!/^[A-Za-z0-9_-]{1,20}$/.test(id)) { error.textContent = 'Enter the ID your instructor gave you. Use letters, digits, - or _ only.'; return; }
 
-      fetch(withLanguage('/api/study/tasks'))
+      fetch(withLanguage('/api/collect/check?id=' + encodeURIComponent(id)))
+        .then(function (r) {
+          if (r.status === 403) { throw new Error('That ID is not on the list. Use the ID your instructor gave you.'); }
+          if (!r.ok) { throw new Error('Could not check your ID. Tell your instructor.'); }
+          return fetch(withLanguage('/api/study/tasks'));
+        })
         .then(function (r) { if (!r.ok) { throw new Error('Could not load the exercises. Tell your instructor.'); } return r.json(); })
         .then(function (list) {
           tasks = list;
@@ -142,6 +147,7 @@
         })
       })
         .then(function (r) {
+          if (r.status === 403) { throw new Error('That ID is not on the list. Use the ID your instructor gave you.'); }
           if (r.status === 400) { throw new Error('Your answer was not accepted. It may be too long (limit 20 000 characters).'); }
           if (!r.ok) { throw new Error('The answer was not saved. Tell your instructor.'); }
           code.value = '';

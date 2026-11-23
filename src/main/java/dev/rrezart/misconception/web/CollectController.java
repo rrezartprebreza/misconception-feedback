@@ -2,6 +2,7 @@ package dev.rrezart.misconception.web;
 
 import dev.rrezart.misconception.collect.AnswerStore;
 import dev.rrezart.misconception.collect.CollectedAnswer;
+import dev.rrezart.misconception.collect.UnknownParticipantException;
 import dev.rrezart.misconception.eval.GoldItem;
 import dev.rrezart.misconception.eval.PilotEvaluator;
 import dev.rrezart.misconception.language.LanguageContext;
@@ -54,6 +55,22 @@ public class CollectController {
             return Map.of("received", true);
         } catch (UnknownTaskException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (UnknownParticipantException e) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "That ID is not on the list");
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
+
+    /** Lets the page check an ID before the student writes anything. 403 means the ID is not on the list. */
+    @GetMapping("/check")
+    public Map<String, Object> check(@RequestParam String id, @RequestParam(required = false) String language) {
+        LanguageContext context = Languages.resolve(registry, language);
+        try {
+            context.collection().checkParticipant(id);
+            return Map.of("allowed", true);
+        } catch (UnknownParticipantException e) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "That ID is not on the list");
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
