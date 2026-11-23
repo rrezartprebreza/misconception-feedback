@@ -165,6 +165,16 @@ STUDY_LANGUAGE=csharp mvn spring-boot:run -Dspring-boot.run.profiles=pilot -Dspr
 
 The pilot evaluates the default language, so set `STUDY_LANGUAGE` to the language of the gold file.
 
+### Tables and figures for the paper
+
+After the pilot runs, build the paper's tables and figures from the saved result files:
+
+```bash
+python3 scripts/make_report.py            # reads study-data/results, writes report/
+```
+
+It writes `table1_overall`, `table2_per_misconception` (CSV and Markdown) and two PNG figures. It keeps the newest result file per language and model, and reads only ids and scores, never student text.
+
 ### Hosted models
 
 The tool talks to any OpenAI-compatible service, so you can compare models without installing anything. Build with `-Popenai` and set the address, key and model in `.env` (see `.env.example`). Groq's production models at the time of writing are `openai/gpt-oss-20b`, `openai/gpt-oss-120b`, `llama-3.3-70b-versatile` and `llama-3.1-8b-instant`; check the provider's list before you start. To run the pilot for several models and languages in one go:
