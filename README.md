@@ -132,6 +132,10 @@ Use this to build the labelled set for the detector evaluation. No model is call
 
 Give each student an ID from a list so that names, initials and student numbers never enter the data. Set `COLLECT_PARTICIPANT_IDS=S01..S60` in `.env` (ranges, commas and spaces are allowed) and restart. The collect page then rejects any other ID, and stores the ID as you wrote it in the list. Without it, any ID of 1 to 20 letters, digits, - or _ is accepted.
 
+### Preparing a labelling sample
+
+`scripts/prepare_sample.py study-data/answers.jsonl --sample-tasks list-insert --sample-per-language 25` keeps the first attempt per student, replaces participant IDs with random codes (private map written separately), and down-samples the exercises you name so one common exercise does not dominate. The original file is never changed.
+
 ### Importing past answers
 
 If you already have student answers, you do not need students to use the page. Put each answer in a file inside a folder named after the exercise id (`list-insert`, `remove-negatives`, `binary-search`, `loop-complexity`). The extension sets the language (`.java`, `.py`, `.cs`). With the app running:
