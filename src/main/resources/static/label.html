@@ -75,7 +75,7 @@
 
       <div class="actions">
         <button class="btn" id="save" type="button">Save and next</button>
-        <span class="hint">You can come back and change a label later.</span>
+        <span class="hint">You can come back and change a label later. Keys: <kbd>1</kbd> to <kbd>8</kbd> tick M01 to M08, <kbd>0</kbd> ticks "None of these", <kbd>Enter</kbd> saves and moves on.</span>
       </div>
       <p class="error" id="error" role="alert"></p>
     </section>
@@ -303,6 +303,24 @@
         out.appendChild(table);
       }).catch(function (e) { out.appendChild(el('p', 'error', e.message)); });
     }
+
+    document.addEventListener('keydown', function (e) {
+      if (!answers.length || e.ctrlKey || e.metaKey || e.altKey) { return; }
+      var t = e.target, tag = t && t.tagName;
+      var typing = tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON' || (tag === 'INPUT' && t.type !== 'checkbox');
+      if (typing) { return; }
+      if (e.key === 'Enter') { e.preventDefault(); save(); return; }
+      if (e.key === '0') {
+        e.preventDefault();
+        document.getElementById('none').click();
+        return;
+      }
+      if (/^[1-9]$/.test(e.key)) {
+        var boxes = document.querySelectorAll('#choices input[value]');
+        var box = boxes[Number(e.key) - 1];
+        if (box) { e.preventDefault(); box.click(); }
+      }
+    });
 
     document.getElementById('open').addEventListener('click', openAnswers);
     document.getElementById('save').addEventListener('click', save);
