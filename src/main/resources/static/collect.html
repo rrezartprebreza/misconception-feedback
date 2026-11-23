@@ -15,24 +15,64 @@
   <main class="narrow">
     <section id="step1">
       <div class="consent">
-        <strong>Information and consent</strong>
-        <!-- DRAFT: have your ethics committee approve this text and fill in the [brackets] before students use it. -->
-        <p>
-          This is a research project by [your name], [department, institution], about how well AI models
-          recognise the mistaken ideas behind students' answers in data structures and algorithms. [Ethics approval reference.]
-        </p>
-        <ul>
-          <li>You send one or more answers to programming exercises. You will not see feedback on this page.</li>
-          <li>Your answer is stored without your name, under the ID you were given. Emails and author lines in the code are removed automatically. Do not write your name or other personal data in your code or explanation.</li>
-          <li>Instructors read the answers and label them. Anonymised answers are then sent to an AI service ([provider name]) to test its detection, and the results may be published. No answer is published with your ID.</li>
-          <li>Taking part is voluntary and does not affect your grade. You can withdraw an answer by giving your ID to [your name] until [date]. Data is kept for [how long] on [where].</li>
-          <li>Questions: [your email].</li>
-        </ul>
+        <!-- DRAFT: have your ethics committee approve both texts and fill in the [brackets] before students use them. -->
+        <div class="langswitch" role="radiogroup" aria-label="Language of the information" id="consentLang" style="margin:0 0 .8rem">
+          <button type="button" role="radio" aria-checked="true" data-lang="sq">Shqip</button>
+          <button type="button" role="radio" aria-checked="false" data-lang="en">English</button>
+        </div>
+
+        <div id="consent-sq" lang="sq">
+          <strong>Informacion dhe pëlqim</strong>
+          <p>
+            Ky është një projekt kërkimor i Rrezart Prebreza, PhD (autor i parë), dhe Besart Prebreza, PhD (autor korrespondent),
+            Departamenti i Shkencave Kompjuterike, Universum International College. Projekti shqyrton se sa mirë modelet e inteligjencës artificiale
+            i dallojnë idetë e gabuara pas përgjigjeve të studentëve në struktura të të dhënave dhe algoritme. [Referenca e miratimit etik.]
+          </p>
+          <ul>
+            <li>Dërgoni një ose më shumë përgjigje për ushtrime programimi. Në këtë faqe nuk do të shihni komente mbi përgjigjen.</li>
+            <li>Përgjigja juaj ruhet pa emrin tuaj, me ID-në që ju është dhënë. Email-et dhe rreshtat «author» në kod hiqen automatikisht. Mos shkruani emrin ose të dhëna të tjera personale në kod apo në shpjegim.</li>
+            <li>Mësimdhënësit i lexojnë përgjigjet dhe i etiketojnë. Përgjigjet e anonimizuara dërgohen pastaj te një shërbim i inteligjencës artificiale ([emri i ofruesit]) për të testuar zbulimin, dhe rezultatet mund të publikohen. Asnjë përgjigje nuk publikohet me ID-në tuaj.</li>
+            <li>Pjesëmarrja është vullnetare dhe nuk ndikon në notën tuaj. Mund ta tërhiqni një përgjigje duke ia dhënë ID-në tuaj Rrezart Prebrezës deri më [data]. Të dhënat ruhen [sa kohë] në [ku].</li>
+            <li>Pyetje: [email-i i kontaktit].</li>
+          </ul>
+        </div>
+
+        <div id="consent-en" lang="en" hidden>
+          <strong>Information and consent</strong>
+          <p>
+            This is a research project by Rrezart Prebreza, PhD (first author), and Besart Prebreza, PhD (corresponding author),
+            Department of Computer Science, Universum International College. It looks at how well AI models recognise the mistaken
+            ideas behind students' answers in data structures and algorithms. [Ethics approval reference.]
+          </p>
+          <ul>
+            <li>You send one or more answers to programming exercises. You will not see feedback on this page.</li>
+            <li>Your answer is stored without your name, under the ID you were given. Emails and author lines in the code are removed automatically. Do not write your name or other personal data in your code or explanation.</li>
+            <li>Instructors read the answers and label them. Anonymised answers are then sent to an AI service ([provider name]) to test its detection, and the results may be published. No answer is published with your ID.</li>
+            <li>Taking part is voluntary and does not affect your grade. You can withdraw an answer by giving your ID to Rrezart Prebreza until [date]. Data is kept for [how long] on [where].</li>
+            <li>Questions: [contact email].</li>
+          </ul>
+        </div>
+
         <label for="consent">
           <input type="checkbox" id="consent">
-          <span>I have read this and agree to take part.</span>
+          <span id="consentLabel">I have read this and agree to take part. / Kam lexuar këtë dhe pranoj të marr pjesë.</span>
         </label>
       </div>
+      <script>
+        (function () {
+          var group = document.getElementById('consentLang');
+          Array.prototype.forEach.call(group.querySelectorAll('button'), function (button) {
+            button.addEventListener('click', function () {
+              var lang = button.getAttribute('data-lang');
+              Array.prototype.forEach.call(group.querySelectorAll('button'), function (b) {
+                b.setAttribute('aria-checked', String(b === button));
+              });
+              document.getElementById('consent-sq').hidden = lang !== 'sq';
+              document.getElementById('consent-en').hidden = lang !== 'en';
+            });
+          });
+        })();
+      </script>
 
       <div class="field">
         <label for="pid">Participant ID <span class="hint">(given to you by your instructor, not your name)</span></label>
