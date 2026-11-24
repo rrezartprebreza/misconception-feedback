@@ -2,13 +2,13 @@
 # Runs the pilot evaluation for each language and each model and saves the results in study-data/results/.
 #
 #   scripts/run_pilots.sh java csharp
-#   MODELS="openai/gpt-oss-20b llama-3.3-70b-versatile" scripts/run_pilots.sh java
+#   MODELS="openai/gpt-oss-20b qwen/qwen3.8-27b" scripts/run_pilots.sh java
 #
 # Needs a labelled file per language: study-data/gold-<language>.json (the file you download from /label.html).
 # Provider, address and key come from .env. The automatic fallback is switched off so each run uses one model.
 set -uo pipefail
 
-MODELS=${MODELS:-"openai/gpt-oss-20b openai/gpt-oss-120b llama-3.3-70b-versatile llama-3.1-8b-instant"}
+MODELS=${MODELS:-"openai/gpt-oss-20b qwen/qwen3.8-27b openai/gpt-oss-120b"}
 
 if [ "$#" -eq 0 ]; then
   echo "Usage: scripts/run_pilots.sh <language> [<language> ...]   (java, python, csharp)"

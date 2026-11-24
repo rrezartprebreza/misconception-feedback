@@ -181,11 +181,11 @@ It writes `table1_overall`, `table2_per_misconception` (CSV and Markdown) and tw
 
 ### Hosted models
 
-The tool talks to any OpenAI-compatible service, so you can compare models without installing anything. Build with `-Popenai` and set the address, key and model in `.env` (see `.env.example`). Groq's production models at the time of writing are `openai/gpt-oss-20b`, `openai/gpt-oss-120b`, `llama-3.3-70b-versatile` and `llama-3.1-8b-instant`; check the provider's list before you start. To run the pilot for several models and languages in one go:
+The tool talks to any OpenAI-compatible service, so you can compare models without installing anything. Build with `-Popenai` and set the address, key and model in `.env` (see `.env.example`). The study uses three Groq chat models available in November 2026: `openai/gpt-oss-20b`, `qwen/qwen3.8-27b` and `openai/gpt-oss-120b` (the Llama models were retired). Providers retire models often, so list what your key can use first: `curl -s https://api.groq.com/openai/v1/models -H "Authorization: Bearer $OPENAI_API_KEY"`. To run the pilot for several models and languages in one go:
 
 ```bash
 scripts/run_pilots.sh java csharp          # needs study-data/gold-java.json and study-data/gold-csharp.json
-MODELS="openai/gpt-oss-20b llama-3.3-70b-versatile" scripts/run_pilots.sh java   # your own list
+MODELS="openai/gpt-oss-20b qwen/qwen3.8-27b" scripts/run_pilots.sh java   # your own list
 ```
 
 The script turns the automatic fallback off, so every result file comes from exactly one model.
