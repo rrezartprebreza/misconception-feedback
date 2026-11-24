@@ -4,6 +4,9 @@
 #   scripts/run_pilots.sh java csharp
 #   MODELS="openai/gpt-oss-20b qwen/qwen3.8-27b" scripts/run_pilots.sh java
 #
+# On a free tier the pilot pauses 9 s between answers (about 6-7 min per model and language) and retries on
+# HTTP 429. Set PILOT_PAUSE_MS=0 on a paid tier.
+#
 # Needs a labelled file per language: study-data/gold-<language>.json (the file you download from /label.html).
 # Provider, address and key come from .env. The automatic fallback is switched off so each run uses one model.
 set -uo pipefail

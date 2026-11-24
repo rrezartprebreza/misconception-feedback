@@ -34,28 +34,53 @@ public class PilotRunner implements CommandLineRunner {
     private final String goldFile;
     private final String modelLabel;
     private final String resultsDir;
+    private final long pauseMillis;
 
     public PilotRunner(LanguageRegistry registry,
                        ObjectMapper mapper,
                        @Value("${study.pilot.gold-file:}") String goldFile,
                        ModelLabel modelLabel,
-                       @Value("${study.pilot.results-dir:study-data/results}") String resultsDir) {
+                       @Value("${study.pilot.results-dir:study-data/results}") String resultsDir,
+                       @Value("${study.pilot.pause-ms:0}") long pauseMillis) {
         this.context = registry.defaultContext();
         this.mapper = mapper;
         this.language = context.language();
         this.goldFile = goldFile;
         this.modelLabel = modelLabel.value();
         this.resultsDir = resultsDir;
+        this.pauseMillis = Math.max(0, pauseMillis);
     }
 
     @Override
     public void run(String... args) throws IOException {
         List<GoldItem> items = load();
         System.out.println("Running detector on " + items.size() + " items...");
-        PilotEvaluator.Detailed detailed = PilotEvaluator.evaluateDetailed(items, context.feedback()::detectOnly, context.catalogue());
+        if (pauseMillis > 0) {
+            System.out.printf("Pausing %d ms between answers to stay under the provider's rate limit (about %d min).%n",
+                    pauseMillis, Math.max(1, items.size() * pauseMillis / 60_000));
+        }
+        int[] done = {0};
+        PilotEvaluator.Detailed detailed = PilotEvaluator.evaluateDetailed(items, submission -> {
+            if (done[0] > 0 && pauseMillis > 0) {
+                pause(pauseMillis);
+            }
+            var matches = context.feedback().detectOnly(submission);
+            done[0]++;
+            System.out.println("  answer " + done[0] + "/" + items.size());
+            return matches;
+        }, context.catalogue());
         System.out.println(PilotEvaluator.formatDetailed(detailed));
         Path saved = ResultsWriter.write(mapper, Path.of(resultsDir), language.id(), modelLabel, Instant.now(), detailed);
         System.out.println("Saved " + saved + " (and a .txt summary next to it). Model label: " + modelLabel);
+    }
+
+    private static void pause(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Pilot interrupted", e);
+        }
     }
 
     private List<GoldItem> load() throws IOException {
