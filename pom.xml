@@ -26,6 +26,7 @@
     <properties>
         <java.version>21</java.version>
         <spring-ai.version>1.0.0</spring-ai.version>
+        <eval-baseline.version>0.1.0</eval-baseline.version>
     </properties>
 
     <dependencyManagement>
@@ -48,6 +49,19 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Eval regression tests: repeated runs, baselines and record/replay (DetectorEvalTest). -->
+        <dependency>
+            <groupId>io.github.rrezartprebreza</groupId>
+            <artifactId>eval-junit</artifactId>
+            <version>${eval-baseline.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.rrezartprebreza</groupId>
+            <artifactId>eval-spring-ai</artifactId>
+            <version>${eval-baseline.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

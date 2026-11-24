@@ -197,6 +197,24 @@ Every pilot run is also saved, so nothing has to be copied from the screen. In `
 
 The model name in the file is the model the app called: `OPENAI_MODEL` when built with `-Popenai`, `OLLAMA_MODEL` otherwise, or `STUDY_MODEL_LABEL` if you set it. Change the folder with `study.pilot.results-dir`. To compare models, run the pilot once per model and keep each pair of files.
 
+## Regression test for the detector
+
+`DetectorEvalTest` guards detection quality in CI with [spring-ai-eval-baseline](https://github.com/rrezartprebreza/spring-ai-eval-baseline). Each run checks one answer from the synthetic Java set, and the pass rate is compared with `src/test/resources/eval/detector-baseline.tsv`. The test fails only when the pass rate drops significantly (Fisher's exact test), so a prompt or catalogue change that makes detection worse is caught before it reaches students.
+
+CI replays recorded model answers and needs no network or API key. Record once, and again after changing the prompt or catalogue:
+
+```bash
+# local Ollama (docker compose up -d)
+EVAL_BASE_URL=http://localhost:11434 EVAL_MODEL=qwen2.5-coder:7b \
+  mvn test -Dtest=DetectorEvalTest -Deval.mode=record -Deval.update-baseline=true
+
+# or Groq
+EVAL_BASE_URL=https://api.groq.com/openai EVAL_API_KEY=... EVAL_MODEL=openai/gpt-oss-120b \
+  mvn test -Dtest=DetectorEvalTest -Deval.mode=record -Deval.update-baseline=true
+```
+
+Then commit `src/test/resources/eval/`. Only the synthetic answers are recorded; never record student data. Until a recording exists, the test is skipped.
+
 ## Status
 
 Early scaffold. The catalogue is a starting list from common DSA teaching patterns, not validated against course data.
